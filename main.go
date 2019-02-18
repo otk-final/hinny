@@ -5,16 +5,21 @@ import (
 	"net/http"
 	"log"
 	"otk-final/hinny/web/api"
+
+	"otk-final/hinny/module"
 )
 
 func main() {
+
+	//数据库
+	module.Install("mysql", "mycat-activeii:123qwe@(192.168.30.37:8066)/platform_behavior?charset=utf8")
 
 	mux := mux.NewRouter()
 	mux.Host("127.0.0.1").Name("业务自动化测试平台")
 
 	/*接口服务*/
 	mux.Path("/api/action/doc-fetch").Methods("POST").HandlerFunc(api.DocFetch)
-	mux.Path("/api/action/list").Methods("GET")
+	mux.Path("/api/action/list").Methods("GET").HandlerFunc(api.GetDBMetas)
 	mux.Path("/api/{id}").Methods("GET")
 
 	/*案例服务*/
