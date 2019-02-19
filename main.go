@@ -7,6 +7,7 @@ import (
 	"otk-final/hinny/web/api"
 
 	"otk-final/hinny/module"
+	"otk-final/hinny/web/testcase"
 )
 
 func main() {
@@ -19,14 +20,14 @@ func main() {
 
 	/*接口服务*/
 	mux.Path("/api/action/doc-fetch").Methods("POST").HandlerFunc(api.DocFetch)
-	mux.Path("/api/action/list").Methods("GET").HandlerFunc(api.GetDBMetas)
+	mux.Path("/api/action/list").Methods("GET").HandlerFunc(nil)
 	mux.Path("/api/{id}").Methods("GET")
 
 	/*案例服务*/
-	mux.Path("/case").Methods("POST")
-	mux.Path("/case/action/list").Methods("GET")
-	mux.Path("/case/{id}").Methods("GET")
-	mux.Path("/case/{id}").Methods("PUT")
+	mux.Path("/testcase").Methods("POST").HandlerFunc(testcase.PostCase)
+	mux.Path("/testcase/action/list").Methods("GET")
+	mux.Path("/testcase/{id}").Methods("GET")
+	mux.Path("/testcase/{id}").Methods("PUT")
 
 	/*调度服务*/
 	mux.Path("/schedule/action/start").Methods("PUT")
