@@ -31,9 +31,21 @@
   revision = "a7962380ca08b5a188038c69871b8d3fbdf31e89"
   version = "v1.7.0"
 
+[[projects]]
+  name = "github.com/iris-contrib/go.uuid"
+  packages = ["."]
+  revision = "36e9d2ebbde5e3f13ab2e25625fd453271d6522e"
+  version = "v2.0.0"
+
+[[projects]]
+  name = "github.com/kataras/iris"
+  packages = ["core/errors"]
+  revision = "a0f29bd2f48611021667c199cff55c1e3ab46f81"
+  version = "v11.1.1"
+
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "c6f44d786300fb3f82cabc6ad8e7eb18aa2c2820823444fcc13e6d20a174a882"
+  inputs-digest = "89ef8838208a396c9c0bf760d48b48f016180494aabb0cb4b80d74d381168a5e"
   solver-name = "gps-cdcl"
   solver-version = 1

@@ -21,19 +21,19 @@ const (
 )
 
 type CaseStepConfig struct {
-	Name              string                         `json:"name"`
-	Description       string                         `json:"description"`
-	Tag               *api.ApiTag                    `json:"tag"`
-	Path              *api.ApiPath                   `json:"path"`
-	ParametersWrapper *[]parameter.ParametersWrapper `json:"parameters_wrapper"` //参数策略
-	ValidatorWrapper  *[]valid.ValidatorWrapper      `json:"validator_wrapper"`  //验证策略
-	NextCases         *[]CaseStepConfig              `json:"next_cases"`
+	Name            string                        `json:"name"`
+	Description     string                        `json:"description"`
+	Tag             *api.ApiTag                   `json:"tag"`
+	Path            *api.ApiPath                  `json:"path"`
+	ParameterPolicy []*parameter.ParametersPolicy `json:"parameters_wrapper"` //参数策略
+	ValidatorPolicy []*valid.ValidatorPolicy      `json:"validator_wrapper"`  //验证策略
+	NextCases       []*CaseStepConfig             `json:"next_cases"`
 }
 
 type CaseFlowConfig struct {
 	Name        string            `json:"name"`
 	Description string            `json:"description"`
-	Steps       *[]CaseStepConfig `json:"steps"`
+	Steps       []*CaseStepConfig `json:"steps"`
 }
 
 /**

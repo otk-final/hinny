@@ -8,7 +8,7 @@ const (
 	LINE ValidatorType = "line"
 )
 
-type ValidatorWrapper struct {
+type ValidatorPolicy struct {
 	ValidatorType *ValidatorType `json:"validator_type"` //验证类型
 	MetaData      string         `json:"meta_data"`      //元数据
 	ExpectData    string         `json:"expect_data"`    //预期值
@@ -17,7 +17,7 @@ type ValidatorWrapper struct {
 /*
 	结果验证策略
  */
-type ResultValidatorPolicy interface {
+type ResultValidatorDefine interface {
 	/*
 		@src 	原始值
 		@target	目标值

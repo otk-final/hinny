@@ -7,12 +7,42 @@ import (
 	"errors"
 )
 
-
-
 type HttpBodyValidator struct {
 	Body string
 }
 
+func (that *HttpBodyValidator) Get(schemeField string, body string) (*HttpBodyValidator, string, error) {
+
+}
+
+func GetVal(schemeField string, body string) (*HttpBodyValidator, string, error) {
+
+	that := &HttpBodyValidator{
+		Body: body,
+	}
+
+	//解析报文
+	node := make(map[string]interface{})
+	if err := json.Unmarshal([]byte(that.Body), node); err != nil {
+		return that, "", err
+	}
+
+	//获取值
+	out, funcName := that.jsonExpressionResolve(schemeField, node)
+	if out == nil {
+		return that, "", errors.New("value is nil")
+	}
+
+	if !strings.EqualFold("length", funcName) {
+		return that, out.(string), nil
+	}
+
+	//解析函数
+
+
+
+	return that, "", nil
+}
 
 func (that *HttpBodyValidator) valid(schemeField string, target string) error {
 
@@ -27,6 +57,7 @@ func (that *HttpBodyValidator) valid(schemeField string, target string) error {
 	if out == nil {
 		return errors.New("value is nil")
 	}
+
 	//解析函数
 	if strings.EqualFold("length", funcName) {
 		//长度
@@ -135,5 +166,3 @@ func getBetweenCtx(str, start, end string) string {
 	str = string([]byte(str)[:m])
 	return str
 }
-
-

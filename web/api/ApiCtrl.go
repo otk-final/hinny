@@ -25,6 +25,7 @@ type ApiTag struct {
 }
 
 type ApiPath struct {
+	Host       string                 `json:"host"`
 	Path       string                 `json:"path"`
 	Summary    string                 `json:"summary"`
 	Method     string                 `json:"method"`
