@@ -4,44 +4,44 @@ import (
 	"github.com/gorilla/mux"
 	"net/http"
 	"log"
-	"otk-final/hinny/web/api"
-
-	"otk-final/hinny/module"
-	"otk-final/hinny/web/testcase"
+	"otk-final/hinny/web"
 )
 
 func main() {
 
 	//数据库
-	module.Install("mysql", "mycat-activeii:123qwe@(192.168.30.37:8066)/platform_behavior?charset=utf8")
+	//module.Install("mysql", "mycat-activeii:123qwe@(192.168.30.37:8066)/platform_behavior?charset=utf8")
 
-	mux := mux.NewRouter()
-	mux.Host("127.0.0.1").Name("业务自动化测试平台")
+	router := mux.NewRouter()
+	router.Host("127.0.0.1").Name("业务自动化测试平台")
 
-	/*接口服务*/
-	mux.Path("/api/action/doc-fetch").Methods("POST").HandlerFunc(api.DocFetch)
-	mux.Path("/api/action/list").Methods("GET").HandlerFunc(nil)
-	mux.Path("/api/{id}").Methods("GET")
+	/*服务接口*/
 
-	/*案例服务*/
-	mux.Path("/testcase").Methods("POST").HandlerFunc(testcase.PostCase)
-	mux.Path("/testcase/action/list").Methods("GET")
-	mux.Path("/testcase/{id}").Methods("GET")
-	mux.Path("/testcase/{id}").Methods("PUT")
-
-	/*调度服务*/
-	mux.Path("/schedule/action/start").Methods("PUT")
-	mux.Path("/schedule/action/pause").Methods("PUT")
-	mux.Path("/schedule/action/stop").Methods("PUT")
-	mux.Path("/schedule/action/get-process").Methods("GET")
+	/*路径服务*/
+	router.Path("/service/action/list").Methods("OPTIONS", "GET").HandlerFunc(web.GetServices)
+	router.Path("/path/action/list").Methods("OPTIONS", "GET").HandlerFunc(web.GetPaths)
+	router.Path("/path/action/primary").Methods("GET").HandlerFunc(web.GetPrimaryPath)
+	router.Path("/path/action/execute").Methods("POST")
+	router.Path("/path/action/submit").Methods("POST")
 
 	/*作业空间服务*/
-	mux.Path("/workspace/action/list").Methods("GET")
-	mux.Path("/workspace").Methods("POST")
-	mux.Path("/workspace/{userId}").Methods("PUT")
+	router.Path("/workspace/action/list").Methods("OPTIONS", "GET").HandlerFunc(web.GetWorkspaces)
+	router.Path("/workspace").Methods("POST").HandlerFunc(web.CreateWorkspace)
+	//router.Path("/workspace/{key}").Methods("DELETE").HandlerFunc(web.RemoveWorkspace)
+	router.Path("/workspace/action/change").Methods("POST").HandlerFunc(web.ChangeWorkspace)
+
+	//全部支持跨域
+	router.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			w.Header().Set("access-Control-Allow-Origin", "*")
+			w.Header().Add("access-Control-Allow-Headers", "*,Workspace")
+			next.ServeHTTP(w, req)
+		})
+	})
+	router.Use(mux.CORSMethodMiddleware(router))
 
 	//启动服务
-	err := http.ListenAndServe(":18080", mux)
+	err := http.ListenAndServe(":18080", router)
 	if err != nil {
 		log.Fatal("ListenAndServe", err)
 	}
