@@ -20,7 +20,7 @@ func main() {
 	/*路径服务*/
 	router.Path("/service/action/list").Methods("OPTIONS", "GET").HandlerFunc(web.GetServices)
 	router.Path("/path/action/list").Methods("OPTIONS", "GET").HandlerFunc(web.GetPaths)
-	router.Path("/path/action/primary").Methods("GET").HandlerFunc(web.GetPrimaryPath)
+	router.Path("/path/action/primary").Methods("OPTIONS","GET").HandlerFunc(web.GetPrimaryPath)
 	router.Path("/path/action/execute").Methods("POST")
 	router.Path("/path/action/submit").Methods("POST")
 
@@ -33,8 +33,8 @@ func main() {
 	//全部支持跨域
 	router.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			w.Header().Set("access-Control-Allow-Origin", "*")
-			w.Header().Add("access-Control-Allow-Headers", "*,Workspace")
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+			w.Header().Add("Access-Control-Allow-Headers", "workspace")
 			next.ServeHTTP(w, req)
 		})
 	})
