@@ -1,44 +1,11 @@
-package service
+package swagger
 
 import (
 	"net/http"
 	"io/ioutil"
 	"encoding/json"
-	"fmt"
+	"otk-final/hinny/module"
 )
-
-/**
-接口抓取配置
-*/
-type DocFetchParameter struct {
-	Type       string `json:type`
-	FetchUrl   string `json:"fetch_url"`
-	ServerName string `json:"server_name"`
-}
-
-type ApiTag struct {
-	Name        string `json:"serviceName"`
-	Description string `json:"description"`
-	PathCount   int    `json:"pathCount"`
-}
-
-type ApiPath struct {
-	PrimaryId   string         `json:"primary_id"`
-	Tag         *ApiTag        `json:"service"`
-	TagName     string         `json:"tag_name"`
-	Path        string         `json:"path"`
-	Description string         `json:"description"`
-	Method      string         `json:"method"`
-	Parameters  []interface{}  `json:"parameters"`
-	Definition  *ApiDefinition `json:"responses"`
-	Deprecated  bool           `json:"deprecated"`
-}
-
-type ApiDefinition struct {
-	Properties  interface{} `json:"properties"`
-	Title       string      `json:"title"`
-	Description string      `json:"description"`
-}
 
 /**
 Swagger 抓取接口实现
@@ -46,7 +13,30 @@ Swagger 抓取接口实现
 type SwaggerHandler struct {
 }
 
-func (handler *SwaggerHandler) DocFetch(fetchUrl string) ([]ApiTag, []ApiPath, []ApiDefinition) {
+func (handler *SwaggerHandler) DocFetch(fetchUrl string) ([]module.ApiTag, []module.ApiPath, []module.ApiDefinition) {
+
+	nullFunc := new(struct {
+		item      map[string]interface{}
+		stringCvt func(name string) string
+		objCvt    func(name string) map[string]interface{}
+	})
+
+	//空字符串
+	nullFunc.stringCvt = func(name string) string {
+		out := nullFunc.item[name]
+		if out == nil {
+			return ""
+		}
+		return out.(string)
+	}
+	//空对象
+	nullFunc.objCvt = func(name string) map[string]interface{} {
+		out := nullFunc.item[name]
+		if out == nil {
+			return make(map[string]interface{})
+		}
+		return out.(map[string]interface{})
+	}
 
 	/**
 	通过地址获取swagger暴露的接口信息，进行归档
@@ -65,12 +55,12 @@ func (handler *SwaggerHandler) DocFetch(fetchUrl string) ([]ApiTag, []ApiPath, [
 
 	//标签/服务
 	tags := apiOut["tags"].([]interface{})
-	apiTags := make([]ApiTag, 0)
+	apiTags := make([]module.ApiTag, 0)
 	for _, tag := range tags {
 		tagMap := tag.(map[string]interface{})
 
 		tagName := tagMap["name"].(string)
-		apiTag := &ApiTag{
+		apiTag := &module.ApiTag{
 			Name:        tagName,
 			PathCount:   0,
 			Description: tagMap["description"].(string),
@@ -80,22 +70,27 @@ func (handler *SwaggerHandler) DocFetch(fetchUrl string) ([]ApiTag, []ApiPath, [
 
 	//请求路径
 	paths := apiOut["paths"].(map[string]interface{})
-	apiPaths := make([]ApiPath, 0)
+	apiPaths := make([]module.ApiPath, 0)
 	tagPathCounts := make(map[string]int)
 	for k, v := range paths {
 		//转换
 		tagName, slice := handler.convertPath(k, v)
 		//存在继续最近数量
 		tagPathCounts[tagName] = tagPathCounts[tagName] + len(slice)
-
 		apiPaths = append(apiPaths, slice...)
 	}
 
 	//元数据
 	definitions := apiOut["definitions"].(map[string]interface{})
-	apiDefinitions := make([]ApiDefinition, 0)
-	for k, v := range definitions {
-		fmt.Println(k, v)
+	apiDefinitions := make([]module.ApiDefinition, 0)
+	for _, v := range definitions {
+		nullFunc.item = v.(map[string]interface{})
+		define := &module.ApiDefinition{
+			Title:       nullFunc.stringCvt("title"),
+			Description: nullFunc.stringCvt("description"),
+			Properties:  nullFunc.objCvt("properties"),
+		}
+		apiDefinitions = append(apiDefinitions, *define)
 	}
 
 	//回填Tag中的数量
@@ -111,7 +106,7 @@ func (handler *SwaggerHandler) DocFetch(fetchUrl string) ([]ApiTag, []ApiPath, [
 	return apiTags, apiPaths, apiDefinitions
 }
 
-func getTag(array []ApiTag, name string) *ApiTag {
+func getTag(array []module.ApiTag, name string) *module.ApiTag {
 	for _, item := range array {
 		if item.Name == name {
 			return &item
@@ -123,8 +118,8 @@ func getTag(array []ApiTag, name string) *ApiTag {
 /**
 返回当前tag和方法
 */
-func (handler *SwaggerHandler) convertPath(key string, val interface{}) (string, []ApiPath) {
-	pathArray := make([]ApiPath, 0)
+func (handler *SwaggerHandler) convertPath(key string, val interface{}) (string, []module.ApiPath) {
+	pathArray := make([]module.ApiPath, 0)
 	methods := val.(map[string]interface{})
 	var tagName string
 	for mk, mv := range methods {
@@ -134,7 +129,7 @@ func (handler *SwaggerHandler) convertPath(key string, val interface{}) (string,
 		//参数
 		parameters := item["parameters"].([]interface{})
 		//独立方法
-		path := ApiPath{
+		path := module.ApiPath{
 			PrimaryId:   item["operationId"].(string),
 			TagName:     tagName,
 			Path:        key,
