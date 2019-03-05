@@ -30,7 +30,7 @@ func GetServices(response http.ResponseWriter, request *http.Request) {
 func GetPaths(response http.ResponseWriter, request *http.Request) {
 
 	//当前工作空间
-	key := request.Header.Get("key")
+	key := request.Header.Get("workspace")
 	findType := request.URL.Query()["type"][0]
 	findValue := request.URL.Query()["typeValue"][0]
 
@@ -99,19 +99,23 @@ func GetPrimaryPath(response http.ResponseWriter, request *http.Request) {
 		Header: kindOf(parameters, "header"),
 		Uri:    kindOf(parameters, "path"),
 		Query:  kindOf(parameters, "query"),
-		Body:   nil,
 	}
 
 	//获取请求body
 	bodyParams := kindOf(parameters, "body")
 	if bodyParams != nil && len(bodyParams) > 0 {
 		req.Body = getReqBodyDefineJson(key, bodyParams[0])
+	} else {
+		req.Body = "{}"
 	}
 
 	//只取值200的返回信息
 	resp := &module.MetaResponse{
 		Body: getRespBodyDefineJson(key, *path, "200"),
 	}
+
+	path.Parameters = nil
+	path.Responses = nil
 
 	out := &module.MetaOut{
 		Path:     path,

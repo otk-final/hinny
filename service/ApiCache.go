@@ -95,7 +95,7 @@ func GetDefinitionMap(key string, objDefine string) map[string]interface{} {
 	allDefines := apiDefinitionCached[key]
 
 	pj := &PropertyCvtMap{
-		maxDeep:    10,
+		maxDeep:    5,
 		allDefines: apiDefinitionCached[key],
 		getPrimary: func(objDefine string) *module.ApiDefinition {
 			for _, define := range allDefines {
