@@ -6,6 +6,7 @@ import (
 	"strings"
 	"otk-final/hinny/service/swagger"
 	"otk-final/hinny/module"
+	"encoding/json"
 )
 
 func init() {
@@ -75,13 +76,50 @@ func GetPrimaryPath(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
+	parameters := path.Parameters
+	//过滤出，uri,query,header,body参数
+
+	kindOf := func(parameters []interface{}, in string) []interface{} {
+		kindArray := make([]interface{}, 0)
+		for _, p := range parameters {
+			item := p.(map[string]interface{})
+			kind, ok := item["in"]
+			if ok && kind.(string) == in {
+				kindArray = append(kindArray, item)
+			}
+		}
+		return kindArray
+	}
+
 	/**
 		1，生成scheme文件
 		2，补齐相关参数
 	 */
+	req := &module.MetaRequest{
+		Header: kindOf(parameters, "header"),
+		Uri:    kindOf(parameters, "path"),
+		Query:  kindOf(parameters, "query"),
+		Body:   nil,
+	}
 
+	//获取请求body
+	bodyParams := kindOf(parameters, "body")
+	if bodyParams != nil && len(bodyParams) > 0 {
+		req.Body = getReqBodyDefineJson(key, bodyParams[0])
+	}
 
-	view.JSON(response, 200, path)
+	//只取值200的返回信息
+	resp := &module.MetaResponse{
+		Body: getRespBodyDefineJson(key, *path, "200"),
+	}
+
+	out := &module.MetaOut{
+		Path:     path,
+		Request:  req,
+		Response: resp,
+	}
+
+	view.JSON(response, 200, out)
 }
 
 func matchPath(findType string, findValue string, path *module.ApiPath,
@@ -93,4 +131,28 @@ func matchPath(findType string, findValue string, path *module.ApiPath,
 		return matchFunc(findValue, path.Path)
 	}
 	return false
+}
+
+func getReqBodyDefineJson(key string, bodyParam interface{}) string {
+
+	bodyMap := bodyParam.(map[string]interface{})
+	schemaMap := bodyMap["schema"].(map[string]interface{})
+
+	bodyMapper := service.GetDefinitionMap(key, schemaMap["$ref"].(string))
+	json, err := json.Marshal(bodyMapper)
+	if err != nil {
+		panic(err)
+	}
+	return string(json)
+}
+
+func getRespBodyDefineJson(key string, path module.ApiPath, code string) string {
+	codeMap := path.Responses[code].(map[string]interface{})
+	schemaMap := codeMap["schema"].(map[string]interface{})
+	bodyMapper := service.GetDefinitionMap(key, schemaMap["$ref"].(string))
+	json, err := json.Marshal(bodyMapper)
+	if err != nil {
+		panic(err)
+	}
+	return string(json)
 }

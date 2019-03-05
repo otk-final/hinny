@@ -55,8 +55,8 @@ func ApiRefresh(fetchHandler ApiHandler, key string) error {
 	ws := &db.Workspace{
 		ApiUrl: "http://api-dev.yryz.com/gateway/lovelorn/v2/api-docs",
 	}
-	ok, err := db.Session.Cols("api_url").Where("ws_key=?", key).Get(ws)
-	if !ok && err != nil {
+	ok, err := db.Conn.Cols("api_url").Where("ws_key=?", key).Get(ws)
+	if !ok || err != nil {
 		return err
 	}
 	/**
@@ -75,6 +75,16 @@ func ApiRefresh(fetchHandler ApiHandler, key string) error {
 }
 func GetPathPrimary(key string, identity string) *module.ApiPath {
 
+	paths, ok := apiPathCached[key]
+	if !ok {
+		return nil
+	}
+
+	for _, path := range paths {
+		if path.PrimaryId == identity {
+			return &path
+		}
+	}
 	return nil
 }
 

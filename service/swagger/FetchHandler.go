@@ -137,6 +137,7 @@ func (handler *SwaggerHandler) convertPath(key string, val interface{}) (string,
 			Parameters:  parameters,
 			Description: item["summary"].(string),
 			Deprecated:  item["deprecated"].(bool),
+			Responses:   item["responses"].(map[string]interface{}),
 		}
 		pathArray = append(pathArray, path)
 	}

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"encoding/json"
 	"time"
+	"otk-final/hinny/module"
 )
 
 func init() {
@@ -13,7 +14,7 @@ func init() {
 }
 
 func TestWorkspace(t *testing.T) {
-	id, err := Session.Insert(&Workspace{
+	id, err := Conn.Insert(&Workspace{
 		Application: "lovelorn",
 		WsName:      "个人自测平台",
 		WsKey:       "huangxy-local",
@@ -40,10 +41,10 @@ func TestCaseTemplate(t *testing.T) {
 	query["pageNo"] = "1"
 	query["pageSize"] = "20"
 
-	req := &MetaRequest{
-		Header: head,
-		Uri:    uri,
-		Query:  query,
+	req := &module.MetaRequest{
+		Header: nil,
+		Uri:    nil,
+		Query:  nil,
 		Body:   "",
 	}
 
@@ -67,7 +68,7 @@ func TestCaseTemplate(t *testing.T) {
 		CreateTime:  time.Now(),
 	}
 
-	id, err := Session.Insert(temp)
+	id, err := Conn.Insert(temp)
 
 	if err != nil {
 		panic(err)
@@ -78,15 +79,15 @@ func TestCaseTemplate(t *testing.T) {
 
 func TestCaseLog(t *testing.T) {
 
-	r := &MetaResult{
+	r := &module.MetaResult{
 		Rule: "规则说明",
 		Ok:   true,
 		Msg:  "验证通过",
 	}
-	resultCtx, _ := json.Marshal([]*MetaResult{r})
+	resultCtx, _ := json.Marshal([]*module.MetaResult{r})
 
 	temp := &CaseTemplate{}
-	ok, err := Session.ID(2).Get(temp)
+	ok, err := Conn.ID(2).Get(temp)
 
 	if !ok && err != nil {
 		panic(err)
@@ -102,7 +103,7 @@ func TestCaseLog(t *testing.T) {
 		CreateTime:  time.Now(),
 	}
 
-	id, err := Session.Insert(log)
+	id, err := Conn.Insert(log)
 	if err != nil {
 		panic(err)
 	}

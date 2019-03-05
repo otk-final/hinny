@@ -5,12 +5,13 @@ import (
 	"net/http"
 	"log"
 	"otk-final/hinny/web"
+	"otk-final/hinny/module/db"
 )
 
 func main() {
 
 	//数据库
-	//module.Install("mysql", "mycat-activeii:123qwe@(192.168.30.37:8066)/platform_behavior?charset=utf8")
+	db.Install("mysql", "dev62:dev62.123456@(192.168.30.62:3306)/platform_behavior?charset=utf8")
 
 	router := mux.NewRouter()
 	router.Host("127.0.0.1").Name("业务自动化测试平台")
@@ -20,7 +21,7 @@ func main() {
 	/*路径服务*/
 	router.Path("/service/action/list").Methods("OPTIONS", "GET").HandlerFunc(web.GetServices)
 	router.Path("/path/action/list").Methods("OPTIONS", "GET").HandlerFunc(web.GetPaths)
-	router.Path("/path/action/primary").Methods("OPTIONS","GET").HandlerFunc(web.GetPrimaryPath)
+	router.Path("/path/action/primary").Methods("OPTIONS", "GET").HandlerFunc(web.GetPrimaryPath)
 	router.Path("/path/action/execute").Methods("POST")
 	router.Path("/path/action/submit").Methods("POST")
 

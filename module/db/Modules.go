@@ -52,38 +52,9 @@ type CaseLog struct {
 	CreateTime   time.Time `xorm:"datetime 					'create_time'"`
 }
 
-/**
-	元数据-请求
- */
-type MetaRequest struct {
-	Version string                 `json:"version"`
-	Header  map[string]string      `json:"header"`
-	Uri     map[string]string      `json:"uri"`
-	Query   map[string]interface{} `json:"query"`
-	Body    interface{}            `json:"body"`
-}
 
-/**
-	元数据-响应
- */
-type MetaResponse struct {
-	Version string            `json:"version"`
-	Header  map[string]string `json:"header"`
-	Body    interface{}       `json:"body"`
-	Code    int8              `json:"code"`
-}
 
-/**
-	元数据-验证结果
- */
-type MetaResult struct {
-	Version string `json:"version"`
-	Rule    string `json:"rule"`
-	Msg     string `json:"msg"`
-	Ok      bool   `json:"ok"`
-}
-
-var Session *xorm.Engine
+var Conn *xorm.Engine
 /**
 
 	初始化
@@ -110,5 +81,5 @@ func Install(driverName string, dataSourceName string) {
 	engine.ShowSQL(true)
 	engine.SetTableMapper(mapper)
 	//暴露
-	Session = engine
+	Conn = engine
 }
