@@ -36,6 +36,8 @@ func main() {
 	router.Path("/workspace/action/refresh").Methods("POST").HandlerFunc(web.RefreshWorkspace)
 	router.Path("/workspace/action/change").Methods("POST").HandlerFunc(web.ChangeWorkspace)
 
+	router.Path("/case/action/get-module-group").Methods("GET").HandlerFunc(web.GetCaseModuleCroups)
+
 
 
 	//全部支持跨域
@@ -47,9 +49,6 @@ func main() {
 		})
 	})
 	router.Use(mux.CORSMethodMiddleware(router))
-
-
-
 
 	//启动服务
 	err := http.ListenAndServe(":18080", router)

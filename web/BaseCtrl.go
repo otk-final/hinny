@@ -9,7 +9,6 @@ type BaseCtrl interface {
 
 }
 
-
-
-
 var view = respond.New()
+
+

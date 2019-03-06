@@ -13,7 +13,7 @@ import (
  */
 type Workspace struct {
 	Id           int64  `json:"id"          xorm:"bigint(20)   notnull 'id'"`
-	Application1 string `json:"application" xorm:"varchar(64)  notnull 'application'"`
+	Application  string `json:"application" xorm:"varchar(64)  notnull 'application'"`
 	WsName       string `json:"ws_name"     xorm:"varchar(64)  notnull 'ws_name'"`
 	WsKey        string `json:"ws_key"      xorm:"varchar(64)  notnull 'ws_key'"`
 	ApiUrl       string `json:"api_url"     xorm:"varchar(256) notnull 'api_url'"`
