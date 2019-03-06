@@ -138,12 +138,32 @@ func matchPath(findType string, findValue string, path *module.ApiPath,
 }
 
 func getReqBodyDefineJson(key string, bodyParam interface{}) string {
-
 	bodyMap := bodyParam.(map[string]interface{})
-	schemaMap := bodyMap["schema"].(map[string]interface{})
+	schema, ok := bodyMap["schema"]
+	if !ok {
+		return "{}"
+	}
 
-	bodyMapper := service.GetDefinitionMap(key, schemaMap["$ref"].(string))
-	json, err := json.Marshal(bodyMapper)
+	schemaMap := schema.(map[string]interface{})
+	var ref interface{}
+	var bodyOut interface{}
+	//判断类型
+	schemaType := schemaMap["type"]
+	if "array" == schemaType {
+		ref, ok = schemaMap["items"].(map[string]interface{})["$ref"]
+		if !ok {
+			return "[]"
+		}
+		bodyOut = service.GetDefinitionArray(key, ref.(string))
+	} else {
+		ref, ok = schemaMap["$ref"]
+		if !ok {
+			return "{}"
+		}
+		bodyOut = service.GetDefinitionMap(key, ref.(string))
+	}
+
+	json, err := json.Marshal(bodyOut)
 	if err != nil {
 		panic(err)
 	}
@@ -152,11 +172,5 @@ func getReqBodyDefineJson(key string, bodyParam interface{}) string {
 
 func getRespBodyDefineJson(key string, path module.ApiPath, code string) string {
 	codeMap := path.Responses[code].(map[string]interface{})
-	schemaMap := codeMap["schema"].(map[string]interface{})
-	bodyMapper := service.GetDefinitionMap(key, schemaMap["$ref"].(string))
-	json, err := json.Marshal(bodyMapper)
-	if err != nil {
-		panic(err)
-	}
-	return string(json)
+	return getReqBodyDefineJson(key, codeMap)
 }

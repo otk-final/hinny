@@ -12,11 +12,11 @@ import (
 	工作空间表
  */
 type Workspace struct {
-	Id          int64  `xorm:"bigint(20) notnull 	'id'"`
-	Application string `xorm:"varchar(64) notnull 	'application'"`
-	WsName      string `xorm:"varchar(64) notnull 	'ws_name'"`
-	WsKey       string `xorm:"varchar(64) notnull 	'ws_key'"`
-	ApiUrl      string `xorm:"varchar(256) notnull 	'api_url'"`
+	Id           int64  `json:"id"          xorm:"bigint(20)   notnull 'id'"`
+	Application1 string `json:"application" xorm:"varchar(64)  notnull 'application'"`
+	WsName       string `json:"ws_name"     xorm:"varchar(64)  notnull 'ws_name'"`
+	WsKey        string `json:"ws_key"      xorm:"varchar(64)  notnull 'ws_key'"`
+	ApiUrl       string `json:"api_url"     xorm:"varchar(256) notnull 'api_url'"`
 }
 
 /**
@@ -51,8 +51,6 @@ type CaseLog struct {
 	Curl         string    `xorm:"varchar(128) notnull 		'curl'"`
 	CreateTime   time.Time `xorm:"datetime 					'create_time'"`
 }
-
-
 
 var Conn *xorm.Engine
 /**

@@ -15,7 +15,7 @@ func init() {
 
 func TestWorkspace(t *testing.T) {
 	id, err := Conn.Insert(&Workspace{
-		Application: "lovelorn",
+		Application1: "lovelorn",
 		WsName:      "个人自测平台",
 		WsKey:       "huangxy-local",
 		ApiUrl:      "http://192.168.30.61:18080",

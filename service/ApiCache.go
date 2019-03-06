@@ -4,7 +4,6 @@ import (
 	"sync"
 	"otk-final/hinny/module"
 	"otk-final/hinny/module/db"
-	"strings"
 	"time"
 )
 
@@ -20,7 +19,7 @@ var apiPathCached = make(map[string][]module.ApiPath)
 var apiDefinitionCached = make(map[string][]module.ApiDefinition)
 
 //互斥锁，防止同一时间修改缓存
-var once = &sync.Once{}
+var lock = &sync.Mutex{}
 
 func ApiTagList(fetchHandler ApiHandler, key string) ([]module.ApiTag, error) {
 	out, ok := apiTagCached[key]
@@ -52,25 +51,23 @@ func ApiRefresh(fetchHandler ApiHandler, key string) error {
 	/**
 		查询工作空间
 	 */
-	ws := &db.Workspace{
-		ApiUrl: "http://api-dev.yryz.com/gateway/lovelorn/v2/api-docs",
-	}
+	ws := &db.Workspace{}
 	ok, err := db.Conn.Cols("api_url").Where("ws_key=?", key).Get(ws)
 	if !ok || err != nil {
 		return err
 	}
-	/**
-		只允许独立线程进行返回
-	 */
-	once.Do(func() {
-		//查询
-		apiTags, apiPaths, apiDefinitions := fetchHandler.DocFetch(ws.ApiUrl)
 
-		//添加至缓存
-		apiTagCached[key] = apiTags
-		apiPathCached[key] = apiPaths
-		apiDefinitionCached[key] = apiDefinitions
-	})
+	lock.Lock()
+	defer lock.Unlock()
+
+	//查询
+	apiTags, apiPaths, apiDefinitions := fetchHandler.DocFetch(ws.ApiUrl + "/v2/api-docs")
+
+	//添加至缓存
+	apiTagCached[key] = apiTags
+	apiPathCached[key] = apiPaths
+	apiDefinitionCached[key] = apiDefinitions
+
 	return nil
 }
 func GetPathPrimary(key string, identity string) *module.ApiPath {
@@ -88,6 +85,11 @@ func GetPathPrimary(key string, identity string) *module.ApiPath {
 	return nil
 }
 
+func GetDefinitionArray(key string, objDefine string) []interface{} {
+	item := GetDefinitionMap(key, objDefine)
+	return []interface{}{item}
+}
+
 /**
 	根据对象类型生成相关属性
  */
@@ -99,7 +101,7 @@ func GetDefinitionMap(key string, objDefine string) map[string]interface{} {
 		allDefines: apiDefinitionCached[key],
 		getPrimary: func(objDefine string) *module.ApiDefinition {
 			for _, define := range allDefines {
-				if strings.LastIndex(objDefine, define.Title) != -1 {
+				if objDefine == "#/definitions/"+define.Title{
 					return &define
 				}
 			}
@@ -137,6 +139,8 @@ func (pj PropertyCvtMap) propertyFormat(deep int, property map[string]interface{
 		}
 		//字符
 		return ""
+	} else if fieldType == "boolean" {
+		return true
 	} else if fieldType == "array" {
 		//数组
 		array := make([]interface{}, 0)
