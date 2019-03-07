@@ -5,6 +5,7 @@ import (
 	"otk-final/hinny/module"
 	"otk-final/hinny/module/db"
 	"time"
+	"strings"
 )
 
 type ApiHandler interface {
@@ -60,8 +61,14 @@ func ApiRefresh(fetchHandler ApiHandler, key string) error {
 	lock.Lock()
 	defer lock.Unlock()
 
+	suffix := ""
+	if !strings.HasSuffix(ws.ApiUrl, "/") {
+		suffix = "/"
+	}
+	realPath := ws.ApiUrl + suffix + "v2/api-docs"
+
 	//查询
-	apiTags, apiPaths, apiDefinitions := fetchHandler.DocFetch(ws.ApiUrl + "/v2/api-docs")
+	apiTags, apiPaths, apiDefinitions := fetchHandler.DocFetch(realPath)
 
 	//添加至缓存
 	apiTagCached[key] = apiTags
@@ -101,7 +108,7 @@ func GetDefinitionMap(key string, objDefine string) map[string]interface{} {
 		allDefines: apiDefinitionCached[key],
 		getPrimary: func(objDefine string) *module.ApiDefinition {
 			for _, define := range allDefines {
-				if objDefine == "#/definitions/"+define.Title{
+				if objDefine == "#/definitions/"+define.Title {
 					return &define
 				}
 			}

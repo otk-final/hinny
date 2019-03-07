@@ -1,5 +1,7 @@
 package module
 
+import "time"
+
 type ApiTag struct {
 	Name        string `json:"serviceName"`
 	Description string `json:"description"`
@@ -33,6 +35,7 @@ type MetaRequest struct {
 	Uri     []interface{} `json:"uri"`
 	Query   []interface{} `json:"query"`
 	Body    string        `json:"body"`
+	TimeOut time.Duration `json:"time_out"`
 }
 
 /**
@@ -42,7 +45,7 @@ type MetaResponse struct {
 	Version string        `json:"version"`
 	Header  []interface{} `json:"header"`
 	Body    string        `json:"body"`
-	Code    int8          `json:"code"`
+	Code    int           `json:"code"`
 }
 
 /**

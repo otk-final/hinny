@@ -37,7 +37,7 @@ func main() {
 	router.Path("/workspace/action/change").Methods("POST").HandlerFunc(web.ChangeWorkspace)
 
 	router.Path("/case/action/get-module-group").Methods("GET").HandlerFunc(web.GetCaseModuleCroups)
-
+	router.Path("/case/action/execute").Methods("POST").HandlerFunc(web.CaseExecute)
 
 
 	//全部支持跨域
