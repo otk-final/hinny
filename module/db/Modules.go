@@ -1,10 +1,11 @@
 package db
 
 import (
-	"github.com/go-xorm/xorm"
-	"log"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/go-xorm/xorm"
 	"github.com/go-xorm/core"
+	"github.com/sony/sonyflake"
+	"log"
 	"time"
 )
 
@@ -12,40 +13,43 @@ import (
 	工作空间表
  */
 type Workspace struct {
-	Id           int64  `json:"id"          xorm:"bigint(20)   notnull 'id'"`
-	Application  string `json:"application" xorm:"varchar(64)  notnull 'application'"`
-	WsName       string `json:"ws_name"     xorm:"varchar(64)  notnull 'ws_name'"`
-	WsKey        string `json:"ws_key"      xorm:"varchar(64)  notnull 'ws_key'"`
-	ApiUrl       string `json:"api_url"     xorm:"varchar(256) notnull 'api_url'"`
+	Kid         uint64 `json:"kid"         xorm:"pk bigint(20) notnull 'kid'"`
+	Application string `json:"application" xorm:"varchar(64)   notnull 'application'"`
+	WsName      string `json:"wsName"      xorm:"varchar(64)   notnull 'ws_name'"`
+	WsKey       string `json:"wsKey"       xorm:"varchar(64)   notnull 'ws_key'"`
+	ApiUrl      string `json:"apiUrl"      xorm:"varchar(256)  notnull 'api_url'"`
 }
 
 /**
 	案例模板
  */
 type CaseTemplate struct {
-	Id          int64     `xorm:"pk bigint(20) notnull 		'id'"`
-	Application string    `xorm:"varchar(255) notnull 		'application'"`
-	Case        string    `xorm:"varchar(255) 				'case'"`
-	Module      string    `xorm:"varchar(255) 				'module'"`
-	Group       string    `xorm:"varchar(255) 				'group'"`
-	Description string    `xorm:"text 						'description'"`
-	ServiceKey  string    `xorm:"varchar(64) notnull 		'service_key'"`
-	PathKey     string    `xorm:"varchar(128) notnull 		'path_key'"`
-	MetaRequest string    `xorm:"text 						'request'"`
-	ScriptType  string    `xorm:"varchar(32) 				'script_type'"`
-	Script      string    `xorm:"text 						'script'"`
-	CreateTime  time.Time `xorm:"datetime 					'create_time'"`
+	Kid         uint64    `json:"kid"           xorm:"pk bigint(20) 			'kid'"`
+	Application string    `json:"application"   xorm:"varchar(255) notnull 		'application'"`
+	Module      string    `json:"module"        xorm:"varchar(255) 				'module'"`
+	CaseType    string    `json:"caseType"      xorm:"varchar(255) 				'case_type'"`
+	CaseName    string    `json:"caseName"      xorm:"varchar(255) 				'case_name'"`
+	Description string    `json:"description"   xorm:"text 						'description'"`
+	Path        string    `json:"path"          xorm:"varchar(256) notnull 		'path'"`
+	MetaRequest string    `json:"metaRequest"   xorm:"text 						'request'"`
+	ScriptType  string    `json:"scriptType"    xorm:"varchar(32) 				'script_type'"`
+	Script      string    `json:"script"        xorm:"text 						'script'"`
+	CreateTime  time.Time `json:"createTime"    xorm:"datetime 					'create_time'"`
 }
 
 /**
 	案例日志
  */
 type CaseLog struct {
-	Id           int64     `xorm:"bigint(20) 				'id'"`
-	WsId         int64     `xorm:"bigint(20) 				'ws_id'"`
-	CaseId       int64     `xorm:"bigint(20) 				'case_id'"`
+	Kid          uint64    `xorm:"pk bigint(20) 		    'kid'"`
+	WsKId        uint64    `xorm:"bigint(20) 				'ws_kid'"`
+	CaseKid      uint64    `xorm:"bigint(20) 				'case_kid'"`
+	PathIdentity string	   `xorm:"varchar(64) 				'path_identity'"`
+	Path         string    `xorm:"bigint(20) 				'path'"`
 	MetaRequest  string    `xorm:"text 						'request'"`
 	MetaResponse string    `xorm:"text 						'response'"`
+	Script       string    `xorm:"text 						'script'"`
+	ScriptType   string    `xorm:"text 						'script_type'"`
 	MetaResult   string    `xorm:"text 						'result'"`
 	Status       int       `xorm:"tinyint(3) notnull 		'status'"`
 	Curl         string    `xorm:"varchar(128) notnull 		'curl'"`
@@ -53,6 +57,7 @@ type CaseLog struct {
 }
 
 var Conn *xorm.Engine
+var idGeneral *sonyflake.Sonyflake
 /**
 
 	初始化
@@ -80,4 +85,18 @@ func Install(driverName string, dataSourceName string) {
 	engine.SetTableMapper(mapper)
 	//暴露
 	Conn = engine
+}
+
+func InstallIDGeneral(startTime time.Time, machineID uint16) {
+	st := &sonyflake.Settings{
+		StartTime: startTime,
+		MachineID: func() (uint16, error) {
+			return machineID, nil
+		},
+	}
+	idGeneral = sonyflake.NewSonyflake(*st)
+}
+
+func GetNextKid() (uint64, error) {
+	return idGeneral.NextID()
 }

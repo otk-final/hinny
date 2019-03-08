@@ -9,9 +9,9 @@ type ApiTag struct {
 }
 
 type ApiPath struct {
-	PrimaryId   string                 `json:"primary_id"`
+	PrimaryId   string                 `json:"primaryId"`
 	Tag         *ApiTag                `json:"service"`
-	TagName     string                 `json:"tag_name"`
+	TagName     string                 `json:"tagName"`
 	Path        string                 `json:"path"`
 	Description string                 `json:"description"`
 	Method      string                 `json:"method"`
@@ -35,7 +35,7 @@ type MetaRequest struct {
 	Uri     []interface{} `json:"uri"`
 	Query   []interface{} `json:"query"`
 	Body    string        `json:"body"`
-	TimeOut time.Duration `json:"time_out"`
+	TimeOut time.Duration `json:"timeOut"`
 }
 
 /**
@@ -54,7 +54,7 @@ type MetaResponse struct {
 type MetaValid struct {
 	Version    string `json:"version"`
 	Script     string `json:"script"`
-	ScriptType string `json:"script_type"`
+	ScriptType string `json:"scriptType"`
 }
 
 /**

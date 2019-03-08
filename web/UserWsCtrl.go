@@ -11,6 +11,16 @@ import (
 	"otk-final/hinny/service/swagger"
 )
 
+func GetWorkspaceFromHeader(request *http.Request) *db.Workspace {
+	wsKid := request.Header.Get("workspace")
+	ws := &db.Workspace{}
+	ok, err := db.Conn.ID(wsKid).Get(ws)
+	if !ok || err != nil {
+		panic(err)
+	}
+	return ws
+}
+
 func GetWorkspaces(response http.ResponseWriter, request *http.Request) {
 	allWs := make([]db.Workspace, 0)
 
@@ -34,6 +44,10 @@ func CreateWorkspace(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
+	//唯一标识
+	wsKid, _ := db.GetNextKid()
+	ws.Kid = wsKid
+
 	//新增数据库
 	count, err := db.Conn.Insert(ws)
 	if err != nil {
@@ -48,11 +62,13 @@ func CreateWorkspace(response http.ResponseWriter, request *http.Request) {
 func RemoveWorkspace(response http.ResponseWriter, request *http.Request) {
 	vars := mux.Vars(request)
 	//删除
-	_, err := db.Conn.Id(vars["workspaceId"]).Delete(&db.Workspace{})
+	_, err := db.Conn.Id(vars["kid"]).Delete(&db.Workspace{})
 	if err != nil {
 		view.JSON(response, 500, err)
 		return
 	}
+	//TODO 清除缓存
+
 	view.JSON(response, 200, true)
 }
 
@@ -66,7 +82,7 @@ func RefreshWorkspace(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	err = service.ApiRefresh(&swagger.SwaggerHandler{}, ws.WsKey)
+	err = service.ApiRefresh(&swagger.SwaggerHandler{}, ws)
 	if err != nil {
 		view.JSON(response, 500, err)
 	}

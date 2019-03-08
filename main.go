@@ -6,12 +6,15 @@ import (
 	"log"
 	"otk-final/hinny/web"
 	"otk-final/hinny/module/db"
+	"time"
 )
 
 func main() {
 
 	//数据库
 	db.Install("mysql", "dev62:dev62.123456@(192.168.30.62:3306)/platform_behavior?charset=utf8")
+	//ID生成规则
+	db.InstallIDGeneral(time.Now(), 11)
 
 	router := mux.NewRouter()
 	router.Host("127.0.0.1").Name("业务自动化测试平台")
@@ -32,19 +35,24 @@ func main() {
 	/*作业空间服务*/
 	router.Path("/workspace/action/list").Methods("GET").HandlerFunc(web.GetWorkspaces)
 	router.Path("/workspace").Methods("POST").HandlerFunc(web.CreateWorkspace)
-	router.Path("/workspace/{id}").Methods("DELETE").HandlerFunc(web.RemoveWorkspace)
+	router.Path("/workspace/{kid}").Methods("DELETE").HandlerFunc(web.RemoveWorkspace)
 	router.Path("/workspace/action/refresh").Methods("POST").HandlerFunc(web.RefreshWorkspace)
 	router.Path("/workspace/action/change").Methods("POST").HandlerFunc(web.ChangeWorkspace)
 
-	router.Path("/case/action/get-module-group").Methods("GET").HandlerFunc(web.GetCaseModuleCroups)
+	router.Path("/case/action/get-modules").Methods("GET").HandlerFunc(web.GetCaseModules)
 	router.Path("/case/action/execute").Methods("POST").HandlerFunc(web.CaseExecute)
+	router.Path("/case/action/save").Methods("POST").HandlerFunc(web.CaseSave)
+	router.Path("/case/action/list").Methods("GET").HandlerFunc(web.GetCases)
+	router.Path("/case/{id}").Methods("GET").HandlerFunc(web.GetCaseLog)
 
+
+	//TODO 验证脚本，默认参数
 
 	//全部支持跨域
 	router.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 			w.Header().Set("Access-Control-Allow-Origin", "*")
-			w.Header().Add("Access-Control-Allow-Headers", "content-type,workspace")
+			w.Header().Add("Access-Control-Allow-Headers", "content-type,workspace,application")
 			next.ServeHTTP(w, req)
 		})
 	})

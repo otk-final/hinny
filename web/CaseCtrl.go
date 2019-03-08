@@ -7,31 +7,55 @@ import (
 	"otk-final/hinny/service"
 	"io/ioutil"
 	"encoding/json"
+	"time"
+	"fmt"
+	"net/url"
+	"github.com/gorilla/mux"
 )
 
 type CaseModuleGroup struct {
-	Module string   `json:"module"`
-	Groups []string `json:"groups"`
+	Module    string   `json:"module"`
+	CaseTypes []string `json:"caseTypes"`
 }
 
-func GetCaseModuleCroups(response http.ResponseWriter, request *http.Request) {
-	db.Conn.Cols("").GroupBy("module,group").Find(db.CaseTemplate{})
+type CaseArchiveInput struct {
+	LogKid      uint64 `json:"logKid"`
+	Application string `json:"application"`
+	Module      string `json:"module"`
+	CaseType    string `json:"caseType"`
+	CaseName    string `json:"caseName"`
+	Description string `json:"description"`
+}
 
-	rows, err := db.Conn.Query("select module,group_concat(group_name) groups from hinny_case_template group by module")
+func GetCaseModules(response http.ResponseWriter, request *http.Request) {
+
+	out := make([]CaseModuleGroup, 0)
+
+	application := request.Header.Get("application")
+	if application == "" {
+		view.JSON(response, 200, out)
+		return
+	}
+
+
+	rows, err := db.Conn.Select("module,group_concat(case_type) caseTypes").
+		Table("hinny_case_template").
+		Where("application = ?", application).
+		GroupBy("module").Query()
+
 	if err != nil {
 		panic(err)
 	}
 
-	out := make([]CaseModuleGroup, 0)
 	for _, row := range rows {
 		item := &CaseModuleGroup{
 			Module: string(row["module"]),
 		}
-		groups, ok := row["groups"]
+		types, ok := row["caseTypes"]
 		if !ok {
-			item.Groups = []string{}
+			item.CaseTypes = []string{}
 		} else {
-			item.Groups = strings.Split(string(groups), ",")
+			item.CaseTypes = strings.Split(string(types), ",")
 		}
 		out = append(out, *item)
 	}
@@ -42,7 +66,7 @@ func GetCaseModuleCroups(response http.ResponseWriter, request *http.Request) {
 	案例执行
  */
 func CaseExecute(response http.ResponseWriter, request *http.Request) {
-	key := request.Header.Get("workspace")
+	ws := GetWorkspaceFromHeader(request)
 
 	//获取
 	body, _ := ioutil.ReadAll(request.Body)
@@ -53,43 +77,172 @@ func CaseExecute(response http.ResponseWriter, request *http.Request) {
 	}
 
 	//查询唯一请求
-	path := service.GetPathPrimary(key, input.PrimaryId)
+	path := service.GetPathPrimary(ws.Kid, input.PrimaryId)
 	if path == nil {
 		view.JSON(response, 500, "未查询到指定接口")
 		return
 	}
 
-	//查询工作空间
-	ws := &db.Workspace{}
-	ok, err := db.Conn.Where("ws_key=?", key).Get(ws)
-	if !ok || err != nil {
+	//执行
+	out, _ := service.Execute(ws, path, input)
+	//响应
+	view.JSON(response, 200, out)
+}
+
+/**
+	案例保存模板
+ */
+func CaseSave(response http.ResponseWriter, request *http.Request) {
+
+	//获取
+	body, _ := ioutil.ReadAll(request.Body)
+	input := &CaseArchiveInput{}
+	err := json.Unmarshal(body, input)
+	if err != nil {
 		panic(err)
 	}
 
-	//格式化metaRequest内容
-	//reqCtx, _ := json.Marshal(input.Request)
+	//查询原始记录，保存至模板信息表中
+	log := &db.CaseLog{}
+	ok, err := db.Conn.ID(input.LogKid).Get(log)
+	if !ok || err != nil {
+		panic(nil)
+	}
+
+	tempKid, _ := db.GetNextKid()
+
+	temp := &db.CaseTemplate{
+		Kid:         tempKid,
+		CaseName:    input.CaseName,
+		Application: input.Application,
+		Module:      input.Module,
+		CaseType:    input.CaseType,
+		Description: input.Description,
+		Path:        log.Path,
+		MetaRequest: log.MetaRequest,
+		ScriptType:  log.ScriptType,
+		Script:      log.Script,
+		CreateTime:  time.Now(),
+	}
+
+	//创建事务
+	session := db.Conn.NewSession()
+	defer session.Close()
+
+	//事务提交或者回滚
+	defer func() {
+		if err := recover(); err != nil {
+			fmt.Println(err)
+			session.Rollback()
+			view.JSON(response, 200, "保存异常")
+		}
+	}()
+
+	session.Begin()
+	//新增模板
+	count, err := session.Insert(temp)
+	if count != 1 && err != nil {
+		panic(err)
+	}
+
+	//修改日志
+	count, err = session.ID(log.Kid).Update(db.CaseLog{CaseKid: tempKid})
+	if count != 1 && err != nil {
+		panic(err)
+	}
+	session.Commit()
+
+	view.JSON(response, 200, "ok")
+}
+
+/**
+	获取模块列表
+ */
+func GetCases(response http.ResponseWriter, request *http.Request) {
+	temps := make([]*db.CaseTemplate, 0)
+
+	application := request.Header.Get("application")
+	if application == "" {
+		view.JSON(response, 200, temps)
+		return
+	}
+
 	/**
-		组件参数
-		记录模板
-		异步发送请求，通过chan获取响应
+		获取查询参数
 	 */
-	//temp := &db.CaseTemplate{
-	//	Application: "",
-	//	Case:        "",
-	//	Module:      "",
-	//	Group:       "",
-	//	Description: "",
-	//	ServiceKey:  path.Tag.Name,
-	//	PathKey:     path.Path,
-	//	MetaRequest: string(reqCtx),
-	//	ScriptType:  input.Valid.ScriptType,
-	//	Script:      input.Valid.Script,
-	//	CreateTime:  time.Now(),
-	//}
-	////新增数据库
-	//db.Conn.Insert(temp)
-	//执行
-	out, _ := service.Execute(ws.ApiUrl, path, input)
-	//响应
+	values, err := url.ParseQuery(request.URL.RawQuery)
+
+	dynamicArgs := func() (string, []interface{}) {
+		args := make([]interface{}, 0)
+
+		//项目为必要条件
+		sql := "application = ? "
+		args = append(args, application)
+
+		//模块
+		if module := values.Get("module"); module != "" {
+			sql += "and module = ? "
+			args = append(args, module)
+		}
+
+		//类型
+		if caseType := values.Get("caseType"); caseType != "" {
+			sql += "and case_type = ? "
+			args = append(args, caseType)
+		}
+
+		//其他
+		if searchText := values.Get("searchText"); searchText != "" {
+			sql += "and (case_name like ? or path like ?) "
+			args = append(args, "%"+searchText+"%", "%"+searchText+"%")
+		}
+
+		return sql, args
+	}
+
+	/**
+		查询
+	 */
+	sql, args := dynamicArgs()
+
+	err = db.Conn.Cols("kid", "application", "case_type", "module", "case_name", "create_time").Where(sql, args...).Find(&temps)
+	if err != nil {
+		panic(err)
+	}
+
+	view.JSON(response, 200, temps)
+}
+
+func GetCaseLog(response http.ResponseWriter, request *http.Request) {
+
+	vars := mux.Vars(request)
+
+	//获取Path相关基本信息
+	out, err := GetPath(0, "")
+	if err != nil {
+		view.JSON(response, 500, err.Error())
+		return
+	}
+
+	logkid := vars["kid"]
+
+	fmt.Println(logkid)
+	//TODO 获取请求日志记录
+
+	//封装返回  MetaRequest/MetaResponse/MetaValid/[]*MetaResult
+
+	view.JSON(response, 200, out)
+}
+
+func GetCaseTpl(response http.ResponseWriter, request *http.Request) {
+	//获取Path相关基本信息
+	out, err := GetPath(0, "")
+	if err != nil {
+		view.JSON(response, 500, err.Error())
+		return
+	}
+	//TODO 封装相关验证信息
+
+	//封装返回  MetaRequest/MetaValid
 	view.JSON(response, 200, out)
 }

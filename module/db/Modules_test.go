@@ -56,12 +56,7 @@ func TestCaseTemplate(t *testing.T) {
 
 	temp := &CaseTemplate{
 		Application: "lovelorn",
-		Case:        "测试案例名称",
-		Module:      "模块",
-		Group:       "分组",
 		Description: "备注",
-		ServiceKey:  "rest-controller",
-		PathKey:     "/{version}/pv/wish-case-items/action/list-admin",
 		MetaRequest: string(reqCtx),
 		ScriptType:  "javascript",
 		Script:      script,
@@ -94,8 +89,6 @@ func TestCaseLog(t *testing.T) {
 	}
 
 	log := &CaseLog{
-		WsId:        1,
-		CaseId:      temp.Id,
 		MetaRequest: temp.MetaRequest,
 		MetaResult:  string(resultCtx),
 		Status:      1,

@@ -15,48 +15,41 @@ type ApiHandler interface {
 /**
 	接口类数据进行缓存
  */
-var apiTagCached = make(map[string][]module.ApiTag)
-var apiPathCached = make(map[string][]module.ApiPath)
-var apiDefinitionCached = make(map[string][]module.ApiDefinition)
+var apiTagCached = make(map[uint64][]module.ApiTag)
+var apiPathCached = make(map[uint64][]module.ApiPath)
+var apiDefinitionCached = make(map[uint64][]module.ApiDefinition)
 
 //互斥锁，防止同一时间修改缓存
 var lock = &sync.Mutex{}
 
-func ApiTagList(fetchHandler ApiHandler, key string) ([]module.ApiTag, error) {
-	out, ok := apiTagCached[key]
+func ApiTagList(fetchHandler ApiHandler, ws *db.Workspace) ([]module.ApiTag, error) {
+	out, ok := apiTagCached[ws.Kid]
 	//不存在，刷新接口
 	if !ok {
-		err := ApiRefresh(fetchHandler, key)
+		err := ApiRefresh(fetchHandler, ws)
 		if err != nil {
 			panic(err)
 		}
-		out = apiTagCached[key]
+		out = apiTagCached[ws.Kid]
 	}
 	return out, nil
 }
 
-func ApiPathList(fetchHandler ApiHandler, key string) ([]module.ApiPath, error) {
-	out, ok := apiPathCached[key]
+func ApiPathList(fetchHandler ApiHandler, ws *db.Workspace) ([]module.ApiPath, error) {
+	out, ok := apiPathCached[ws.Kid]
 	//不存在，刷新接口
 	if !ok {
-		err := ApiRefresh(fetchHandler, key)
+		err := ApiRefresh(fetchHandler, ws)
 		if err != nil {
 			panic(err)
 		}
-		out = apiPathCached[key]
+		out = apiPathCached[ws.Kid]
 	}
 	return out, nil
 }
 
-func ApiRefresh(fetchHandler ApiHandler, key string) error {
-	/**
-		查询工作空间
-	 */
-	ws := &db.Workspace{}
-	ok, err := db.Conn.Cols("api_url").Where("ws_key=?", key).Get(ws)
-	if !ok || err != nil {
-		return err
-	}
+func ApiRefresh(fetchHandler ApiHandler, ws *db.Workspace) error {
+
 
 	lock.Lock()
 	defer lock.Unlock()
@@ -71,13 +64,13 @@ func ApiRefresh(fetchHandler ApiHandler, key string) error {
 	apiTags, apiPaths, apiDefinitions := fetchHandler.DocFetch(realPath)
 
 	//添加至缓存
-	apiTagCached[key] = apiTags
-	apiPathCached[key] = apiPaths
-	apiDefinitionCached[key] = apiDefinitions
+	apiTagCached[ws.Kid] = apiTags
+	apiPathCached[ws.Kid] = apiPaths
+	apiDefinitionCached[ws.Kid] = apiDefinitions
 
 	return nil
 }
-func GetPathPrimary(key string, identity string) *module.ApiPath {
+func GetPathPrimary(key uint64, identity string) *module.ApiPath {
 
 	paths, ok := apiPathCached[key]
 	if !ok {
@@ -92,7 +85,7 @@ func GetPathPrimary(key string, identity string) *module.ApiPath {
 	return nil
 }
 
-func GetDefinitionArray(key string, objDefine string) []interface{} {
+func GetDefinitionArray(key uint64, objDefine string) []interface{} {
 	item := GetDefinitionMap(key, objDefine)
 	return []interface{}{item}
 }
@@ -100,7 +93,7 @@ func GetDefinitionArray(key string, objDefine string) []interface{} {
 /**
 	根据对象类型生成相关属性
  */
-func GetDefinitionMap(key string, objDefine string) map[string]interface{} {
+func GetDefinitionMap(key uint64, objDefine string) map[string]interface{} {
 	allDefines := apiDefinitionCached[key]
 
 	pj := &PropertyCvtMap{

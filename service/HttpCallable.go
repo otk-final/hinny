@@ -16,7 +16,7 @@ import (
 	案例输入
  */
 type CaseInput struct {
-	PrimaryId string              `json:"primary_id"`
+	PrimaryId string              `json:"primaryId"`
 	Request   *module.MetaRequest `json:"request"`
 	Valid     *module.MetaValid   `json:"valid"`
 }
@@ -25,12 +25,13 @@ type CaseInput struct {
 	案例输出
  */
 type CaseOutput struct {
+	LogKid   uint64               `json:"logKid"`
 	Time     time.Duration        `json:"time"`
 	Response *module.MetaResponse `json:"response"`
 	Result   []*module.MetaResult `json:"result"`
 }
 
-func Execute(host string, path *module.ApiPath, input *CaseInput) (*CaseOutput, error) {
+func Execute(ws *db.Workspace, path *module.ApiPath, input *CaseInput) (*CaseOutput, error) {
 
 	//序列化化存储请求相关参数
 	reqCtx, err := json.Marshal(input.Request)
@@ -38,16 +39,21 @@ func Execute(host string, path *module.ApiPath, input *CaseInput) (*CaseOutput, 
 		fmt.Print(err)
 	}
 
+	logKid, _ := db.GetNextKid()
 	//记录日志
 	log := &db.CaseLog{
-		WsId:        1,
-		CaseId:      2,
-		MetaRequest: string(reqCtx),
-		CreateTime:  time.Now(),
+		Kid:          logKid,
+		CaseKid:      ws.Kid,
+		PathIdentity: path.PrimaryId,
+		Path:         path.Path,
+		MetaRequest:  string(reqCtx),
+		CreateTime:   time.Now(),
+		ScriptType:   input.Valid.ScriptType,
+		Script:       input.Valid.Script,
 	}
 
 	//远程调用
-	curl, metaResp, err := dispatch(host, path, input)
+	curl, metaResp, err := dispatch(ws.ApiUrl, path, input)
 
 	respCtx, err := json.Marshal(metaResp)
 	if err != nil {
@@ -70,7 +76,7 @@ func Execute(host string, path *module.ApiPath, input *CaseInput) (*CaseOutput, 
 	//保存
 	db.Conn.Insert(log)
 
-	return &CaseOutput{Response: metaResp, Result: results}, nil
+	return &CaseOutput{LogKid: logKid, Response: metaResp, Result: results}, nil
 }
 
 /**

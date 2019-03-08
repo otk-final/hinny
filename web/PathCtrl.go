@@ -7,6 +7,7 @@ import (
 	"otk-final/hinny/service/swagger"
 	"otk-final/hinny/module"
 	"encoding/json"
+	"github.com/kataras/iris/core/errors"
 )
 
 func init() {
@@ -15,10 +16,9 @@ func init() {
 
 func GetServices(response http.ResponseWriter, request *http.Request) {
 	//当前工作空间
-	key := request.Header.Get("workspace")
-
+	ws := GetWorkspaceFromHeader(request)
 	//查询
-	out, err := service.ApiTagList(&swagger.SwaggerHandler{}, key)
+	out, err := service.ApiTagList(&swagger.SwaggerHandler{}, ws)
 	if err != nil {
 		view.JSON(response, 200, err)
 		return
@@ -30,12 +30,12 @@ func GetServices(response http.ResponseWriter, request *http.Request) {
 func GetPaths(response http.ResponseWriter, request *http.Request) {
 
 	//当前工作空间
-	key := request.Header.Get("workspace")
+	ws := GetWorkspaceFromHeader(request)
 	findType := request.URL.Query()["type"][0]
 	findValue := request.URL.Query()["typeValue"][0]
 
 	//查询
-	out, err := service.ApiPathList(&swagger.SwaggerHandler{}, key)
+	out, err := service.ApiPathList(&swagger.SwaggerHandler{}, ws)
 	if err != nil {
 		view.JSON(response, 500, err)
 		return
@@ -61,19 +61,12 @@ func GetPaths(response http.ResponseWriter, request *http.Request) {
 	view.JSON(response, 200, outs)
 }
 
-func GetPrimaryPath(response http.ResponseWriter, request *http.Request) {
-
-	//当前工作空间
-	key := request.Header.Get("workspace")
-
-	values := request.URL.Query()
-	primaryId := values["primaryId"][0]
+func GetPath(key uint64, primaryId string) (*module.MetaOut, error) {
 
 	//查询唯一
 	path := service.GetPathPrimary(key, primaryId)
 	if path == nil {
-		view.JSON(response, 500, "未查询到指定接口")
-		return
+		return nil, errors.New("未查询到指定接口")
 	}
 
 	parameters := path.Parameters
@@ -117,10 +110,24 @@ func GetPrimaryPath(response http.ResponseWriter, request *http.Request) {
 	path.Parameters = nil
 	path.Responses = nil
 
-	out := &module.MetaOut{
+	return &module.MetaOut{
 		Path:     path,
 		Request:  req,
 		Response: resp,
+	}, nil
+}
+
+func GetPrimaryPath(response http.ResponseWriter, request *http.Request) {
+
+	//当前工作空间
+	ws := GetWorkspaceFromHeader(request)
+
+	values := request.URL.Query()
+	primaryId := values["primaryId"][0]
+
+	out, err := GetPath(ws.Kid, primaryId)
+	if err != nil {
+		view.JSON(response, 500, err.Error())
 	}
 
 	view.JSON(response, 200, out)
@@ -137,7 +144,7 @@ func matchPath(findType string, findValue string, path *module.ApiPath,
 	return false
 }
 
-func getReqBodyDefineJson(key string, bodyParam interface{}) string {
+func getReqBodyDefineJson(key uint64, bodyParam interface{}) string {
 	bodyMap := bodyParam.(map[string]interface{})
 	schema, ok := bodyMap["schema"]
 	if !ok {
@@ -170,7 +177,7 @@ func getReqBodyDefineJson(key string, bodyParam interface{}) string {
 	return string(json)
 }
 
-func getRespBodyDefineJson(key string, path module.ApiPath, code string) string {
+func getRespBodyDefineJson(key uint64, path module.ApiPath, code string) string {
 	codeMap := path.Responses[code].(map[string]interface{})
 	return getReqBodyDefineJson(key, codeMap)
 }
