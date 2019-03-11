@@ -43,7 +43,7 @@ func Execute(ws *db.Workspace, path *module.ApiPath, input *CaseInput) (*CaseOut
 	//记录日志
 	log := &db.CaseLog{
 		Kid:          logKid,
-		CaseKid:      ws.Kid,
+		WsKId:        ws.Kid,
 		PathIdentity: path.PrimaryId,
 		Path:         path.Path,
 		MetaRequest:  string(reqCtx),

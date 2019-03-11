@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"net/url"
 	"github.com/gorilla/mux"
+	"otk-final/hinny/module"
 )
 
 type CaseModuleGroup struct {
@@ -215,22 +216,81 @@ func GetCases(response http.ResponseWriter, request *http.Request) {
 func GetCaseLog(response http.ResponseWriter, request *http.Request) {
 
 	vars := mux.Vars(request)
+	logKid := vars["kid"]
+
+	//查询数据库记录,获取执行记录
+	log := &db.CaseLog{}
+	ok, err := db.Conn.ID(logKid).Get(log)
+	if !ok || err != nil {
+		panic(err)
+	}
 
 	//获取Path相关基本信息
-	out, err := GetPath(0, "")
+	tpl, err := GetPath(log.WsKId, log.PathIdentity)
 	if err != nil {
 		view.JSON(response, 500, err.Error())
 		return
 	}
 
-	logkid := vars["kid"]
+	logRequest := &module.MetaRequest{}
+	err = json.Unmarshal([]byte(log.MetaRequest), logRequest)
+	if err != nil {
+		panic(err)
+	}
 
-	fmt.Println(logkid)
-	//TODO 获取请求日志记录
+	logResponse := &module.MetaResponse{}
+	err = json.Unmarshal([]byte(log.MetaResponse), logResponse)
+	if err != nil {
+		panic(err)
+	}
 
-	//封装返回  MetaRequest/MetaResponse/MetaValid/[]*MetaResult
+	logResults := make([]*module.MetaResult, 0)
+	err = json.Unmarshal([]byte(log.MetaResult), &logResults)
+	if err != nil {
+		panic(err)
+	}
 
-	view.JSON(response, 200, out)
+	getVal := func(dbArray []interface{}, name string) (bool, interface{}) {
+		for _, item := range dbArray {
+			itemMap := item.(map[string]interface{})
+			if itemMap["name"] == name {
+				return true, itemMap["value"]
+			}
+		}
+		return false, nil
+	}
+
+	//对request进行默认值设置
+	renderValue := func(tplArray []interface{}, dbArray []interface{}) []interface{} {
+		for _, tpl := range tplArray {
+			tplMap := tpl.(map[string]interface{})
+			exist, val := getVal(dbArray, tplMap["name"].(string))
+
+			//不存在，将当前require改为false,前端不进行默认勾选
+			tplMap["required"] = exist
+			if exist {
+				//存在设置值
+				tplMap["value"] = val
+			}
+		}
+		return tplArray
+	}
+
+	//重设request,response,valid
+	tpl.Request = &module.MetaRequest{
+		Header: renderValue(tpl.Request.Header, logRequest.Header),
+		Uri:    renderValue(tpl.Request.Uri, logRequest.Uri),
+		Query:  renderValue(tpl.Request.Query, logRequest.Query),
+		Body:   logRequest.Body,
+	}
+	tpl.Response = logResponse
+	tpl.Valid = &module.MetaValid{
+		Script:     log.Script,
+		ScriptType: log.ScriptType,
+	}
+	tpl.Result = logResults
+
+	view.JSON(response, 200, tpl)
 }
 
 /**
