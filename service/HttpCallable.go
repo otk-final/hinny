@@ -53,7 +53,7 @@ func Execute(ws *db.Workspace, path *module.ApiPath, input *CaseInput) (*CaseOut
 	}
 
 	//远程调用
-	curl, metaResp, err := dispatch(ws.ApiUrl, path, input)
+	_, metaResp, err := dispatch(ws.ApiUrl, path, input)
 
 	respCtx, err := json.Marshal(metaResp)
 	if err != nil {
@@ -64,13 +64,13 @@ func Execute(ws *db.Workspace, path *module.ApiPath, input *CaseInput) (*CaseOut
 	valid := NewValid(input.Valid.ScriptType, input.Valid.Script)
 
 	//转换对象进行验证
-	results, validCode := valid.valid(*metaResp)
+	results, validCode := valid.Valid(input.Request, metaResp)
 	resultsCtx, _ := json.Marshal(results)
 
 	//存储响应，验证
 	log.MetaResult = string(resultsCtx)
 	log.MetaResponse = string(respCtx)
-	log.Curl = curl
+	log.Curl = ""
 	log.Status = validCode
 
 	//保存
@@ -82,7 +82,7 @@ func Execute(ws *db.Workspace, path *module.ApiPath, input *CaseInput) (*CaseOut
 /**
 	请求分发
  */
-func dispatch(host string, path *module.ApiPath, input *CaseInput) (string, *module.MetaResponse, error) {
+func dispatch(host string, path *module.ApiPath, input *CaseInput) (*http.Request, *module.MetaResponse, error) {
 
 	//请求参数
 	reqUri := input.cvtUrl(host, path.Path)
@@ -144,7 +144,7 @@ func dispatch(host string, path *module.ApiPath, input *CaseInput) (string, *mod
 	}
 
 	fmt.Println(metaResp.Body)
-	return "", metaResp, nil
+	return request, metaResp, nil
 }
 
 /**

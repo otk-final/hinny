@@ -74,3 +74,4 @@ type MetaOut struct {
 	Valid    *MetaValid    `json:"valid"`
 	Result   []*MetaResult `json:"result"`
 }
+

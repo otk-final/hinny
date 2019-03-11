@@ -44,10 +44,22 @@
   revision = "16096ece9a9aaa108c0f0537a18c82b5c792c68b"
 
 [[projects]]
+  name = "github.com/iris-contrib/go.uuid"
+  packages = ["."]
+  revision = "36e9d2ebbde5e3f13ab2e25625fd453271d6522e"
+  version = "v2.0.0"
+
+[[projects]]
   name = "github.com/json-iterator/go"
   packages = ["."]
   revision = "1624edc4454b8682399def8740d46db5e4362ba4"
   version = "v1.1.5"
+
+[[projects]]
+  name = "github.com/kataras/iris"
+  packages = ["core/errors"]
+  revision = "a0f29bd2f48611021667c199cff55c1e3ab46f81"
+  version = "v11.1.1"
 
 [[projects]]
   name = "github.com/modern-go/concurrent"
@@ -68,10 +80,39 @@
   revision = "16096ece9a9aaa108c0f0537a18c82b5c792c68b"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/robertkrimen/otto"
+  packages = [
+    ".",
+    "ast",
+    "dbg",
+    "file",
+    "parser",
+    "registry",
+    "token"
+  ]
+  revision = "15f95af6e78dcd2030d8195a138bd88d4f403546"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/sony/sonyflake"
+  packages = ["."]
+  revision = "6d5bd61810093eae37d7d605d0cbdd845969b5b2"
+
+[[projects]]
   name = "github.com/ugorji/go"
   packages = ["codec"]
   revision = "8fd0f8d918c8f0b52d0af210a812ba882cc31a1e"
   version = "v1.1.2"
+
+[[projects]]
+  name = "gopkg.in/sourcemap.v1"
+  packages = [
+    ".",
+    "base64vlq"
+  ]
+  revision = "6e83acea0053641eff084973fee085f0c193c61a"
+  version = "v1.0.5"
 
 [[projects]]
   name = "gopkg.in/yaml.v2"
@@ -82,6 +123,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "0d0f944d1a5e68d950240e55b45ca08e7cbaa860b6235b4ae27fc197cf3e2485"
+  inputs-digest = "ac6ccb579e877670043274e2a27818aeae41f9d761ba120d87a12fd2271570e7"
   solver-name = "gps-cdcl"
   solver-version = 1

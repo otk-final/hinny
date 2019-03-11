@@ -43,8 +43,8 @@ func main() {
 	router.Path("/case/action/execute").Methods("POST").HandlerFunc(web.CaseExecute)
 	router.Path("/case/action/save").Methods("POST").HandlerFunc(web.CaseSave)
 	router.Path("/case/action/list").Methods("GET").HandlerFunc(web.GetCases)
+	router.Path("/case/action/get-logs").Methods("GET").HandlerFunc(web.GetCaseLogs)
 	router.Path("/case/{id}").Methods("GET").HandlerFunc(web.GetCaseLog)
-
 
 	//TODO 验证脚本，默认参数
 

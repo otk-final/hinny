@@ -20,7 +20,6 @@ type CaseModuleGroup struct {
 
 type CaseArchiveInput struct {
 	LogKid      uint64 `json:"logKid"`
-	Application string `json:"application"`
 	Module      string `json:"module"`
 	CaseType    string `json:"caseType"`
 	CaseName    string `json:"caseName"`
@@ -36,7 +35,6 @@ func GetCaseModules(response http.ResponseWriter, request *http.Request) {
 		view.JSON(response, 200, out)
 		return
 	}
-
 
 	rows, err := db.Conn.Select("module,group_concat(case_type) caseTypes").
 		Table("hinny_case_template").
@@ -93,6 +91,7 @@ func CaseExecute(response http.ResponseWriter, request *http.Request) {
 	案例保存模板
  */
 func CaseSave(response http.ResponseWriter, request *http.Request) {
+	application := request.Header.Get("application")
 
 	//获取
 	body, _ := ioutil.ReadAll(request.Body)
@@ -113,8 +112,8 @@ func CaseSave(response http.ResponseWriter, request *http.Request) {
 
 	temp := &db.CaseTemplate{
 		Kid:         tempKid,
+		Application: application,
 		CaseName:    input.CaseName,
-		Application: input.Application,
 		Module:      input.Module,
 		CaseType:    input.CaseType,
 		Description: input.Description,
@@ -230,6 +229,26 @@ func GetCaseLog(response http.ResponseWriter, request *http.Request) {
 	//TODO 获取请求日志记录
 
 	//封装返回  MetaRequest/MetaResponse/MetaValid/[]*MetaResult
+
+	view.JSON(response, 200, out)
+}
+
+/**
+	获取案例下，的日志记录
+ */
+func GetCaseLogs(response http.ResponseWriter, request *http.Request) {
+	caseKid := request.URL.Query().Get("caseKid")
+
+	/**
+		查询数据库，创建时间倒叙
+	 */
+	out := make([]*db.CaseLog, 0)
+	err := db.Conn.Cols("kid", "path", "status", "create_time").
+		Where("case_kid=?", caseKid).
+		Desc("create_time").Find(&out)
+	if err != nil {
+		panic(err)
+	}
 
 	view.JSON(response, 200, out)
 }

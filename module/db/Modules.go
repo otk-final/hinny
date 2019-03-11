@@ -41,19 +41,19 @@ type CaseTemplate struct {
 	案例日志
  */
 type CaseLog struct {
-	Kid          uint64    `xorm:"pk bigint(20) 		    'kid'"`
-	WsKId        uint64    `xorm:"bigint(20) 				'ws_kid'"`
-	CaseKid      uint64    `xorm:"bigint(20) 				'case_kid'"`
-	PathIdentity string	   `xorm:"varchar(64) 				'path_identity'"`
-	Path         string    `xorm:"bigint(20) 				'path'"`
-	MetaRequest  string    `xorm:"text 						'request'"`
-	MetaResponse string    `xorm:"text 						'response'"`
-	Script       string    `xorm:"text 						'script'"`
-	ScriptType   string    `xorm:"text 						'script_type'"`
-	MetaResult   string    `xorm:"text 						'result'"`
-	Status       int       `xorm:"tinyint(3) notnull 		'status'"`
-	Curl         string    `xorm:"varchar(128) notnull 		'curl'"`
-	CreateTime   time.Time `xorm:"datetime 					'create_time'"`
+	Kid          uint64    `json:"kid"          xorm:"pk bigint(20) 		    'kid'"`
+	WsKId        uint64    `json:"wsKid"        xorm:"bigint(20) 				'ws_kid'"`
+	CaseKid      uint64    `json:"caseKid"      xorm:"bigint(20) 				'case_kid'"`
+	PathIdentity string    `json:"pathIdentity" xorm:"varchar(64) 				'path_identity'"`
+	Path         string    `json:"path"         xorm:"bigint(20) 				'path'"`
+	MetaRequest  string    `json:"metaRequest"  xorm:"text 						'request'"`
+	MetaResponse string    `json:"metaResponse" xorm:"text 						'response'"`
+	Script       string    `json:"script"       xorm:"text 						'script'"`
+	ScriptType   string    `json:"scriptType"   xorm:"text 						'script_type'"`
+	MetaResult   string    `json:"metaResult"   xorm:"text 						'result'"`
+	Status       int       `json:"status"       xorm:"tinyint(3) notnull 		'status'"`
+	Curl         string    `json:"curl"         xorm:"varchar(128) notnull 		'curl'"`
+	CreateTime   time.Time `json:"createTime"   xorm:"datetime 					'create_time'"`
 }
 
 var Conn *xorm.Engine

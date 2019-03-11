@@ -31,8 +31,8 @@ func GetPaths(response http.ResponseWriter, request *http.Request) {
 
 	//当前工作空间
 	ws := GetWorkspaceFromHeader(request)
-	findType := request.URL.Query()["type"][0]
-	findValue := request.URL.Query()["typeValue"][0]
+	findType := request.URL.Query().Get("type")
+	findValue := request.URL.Query().Get("typeValue")
 
 	//查询
 	out, err := service.ApiPathList(&swagger.SwaggerHandler{}, ws)
@@ -110,12 +110,21 @@ func GetPath(key uint64, primaryId string) (*module.MetaOut, error) {
 	path.Parameters = nil
 	path.Responses = nil
 
+	//获取标准示例验证脚本
+
 	return &module.MetaOut{
 		Path:     path,
 		Request:  req,
 		Response: resp,
+		//取值默认脚本
+		Valid: &module.MetaValid{
+			Script:     service.ValidTemplateScript,
+			ScriptType: "javascript",
+		},
 	}, nil
 }
+
+
 
 func GetPrimaryPath(response http.ResponseWriter, request *http.Request) {
 
