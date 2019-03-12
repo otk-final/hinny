@@ -10,6 +10,8 @@ import (
 	"otk-final/hinny/module/db"
 	"fmt"
 	"encoding/json"
+	"strconv"
+	"bytes"
 )
 
 /**
@@ -17,6 +19,7 @@ import (
  */
 type CaseInput struct {
 	PrimaryId string              `json:"primaryId"`
+	CaseKid   uint64              `json:"caseKid"`
 	Request   *module.MetaRequest `json:"request"`
 	Valid     *module.MetaValid   `json:"valid"`
 }
@@ -27,23 +30,33 @@ type CaseInput struct {
 type CaseOutput struct {
 	LogKid   uint64               `json:"logKid"`
 	Time     time.Duration        `json:"time"`
+	Curl     string               `json:"curl"`
 	Response *module.MetaResponse `json:"response"`
 	Result   []*module.MetaResult `json:"result"`
 }
 
 func Execute(ws *db.Workspace, path *module.ApiPath, input *CaseInput) (*CaseOutput, error) {
 
-	//序列化化存储请求相关参数
+	//序列化化存储请求相关参数,存储页面原始数据
 	reqCtx, err := json.Marshal(input.Request)
 	if err != nil {
-		fmt.Print(err)
+		panic(err)
 	}
+
+	//初始化验证对象
+	valid := NewValid(input.Valid.Script, input.Request)
+	newRequest, err := valid.BeforeInit()
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	input.Request = newRequest
 
 	logKid, _ := db.GetNextKid()
 	//记录日志
 	log := &db.CaseLog{
 		Kid:          logKid,
 		WsKId:        ws.Kid,
+		CaseKid:      input.CaseKid,
 		PathIdentity: path.PrimaryId,
 		Path:         path.Path,
 		MetaRequest:  string(reqCtx),
@@ -53,30 +66,30 @@ func Execute(ws *db.Workspace, path *module.ApiPath, input *CaseInput) (*CaseOut
 	}
 
 	//远程调用
-	_, metaResp, err := dispatch(ws.ApiUrl, path, input)
+	req, metaResp, err := dispatch(ws.ApiUrl, path, input)
+
+	//生成Curl命令
+	log.Curl = Curl(req, input.Request.Body)
+	fmt.Println(log.Curl)
 
 	respCtx, err := json.Marshal(metaResp)
 	if err != nil {
-		fmt.Print(err)
+		fmt.Println(err)
 	}
 
-	//初始化验证对象
-	valid := NewValid(input.Valid.ScriptType, input.Valid.Script)
-
 	//转换对象进行验证
-	results, validCode := valid.Valid(input.Request, metaResp)
+	results, validCode := valid.AfterValid(metaResp)
 	resultsCtx, _ := json.Marshal(results)
 
 	//存储响应，验证
 	log.MetaResult = string(resultsCtx)
 	log.MetaResponse = string(respCtx)
-	log.Curl = ""
 	log.Status = validCode
 
 	//保存
 	db.Conn.Insert(log)
 
-	return &CaseOutput{LogKid: logKid, Response: metaResp, Result: results}, nil
+	return &CaseOutput{LogKid: logKid, Response: metaResp, Curl: log.Curl, Result: results}, nil
 }
 
 /**
@@ -92,6 +105,8 @@ func dispatch(host string, path *module.ApiPath, input *CaseInput) (*http.Reques
 	if strings.EqualFold(path.Method, "GET") {
 		reqUri.RawQuery = reqValues.Encode()
 	}
+
+	fmt.Println("请求地址:" + reqUri.String())
 
 	//请求对象
 	request := &http.Request{
@@ -155,7 +170,14 @@ func (that *CaseInput) cvtHeader() *http.Header {
 	inputHeader := that.Request.Header
 	for _, item := range inputHeader {
 		itemMap := item.(map[string]interface{})
-		reqHeader.Add(itemMap["name"].(string), itemMap["value"].(string))
+		//目前暂时只支持string类型,
+		name := itemMap["name"].(string)
+
+		//转换
+		strings := stringCvt(itemMap["value"])
+		for _, v := range strings {
+			reqHeader.Add(name, v)
+		}
 	}
 	return reqHeader
 }
@@ -204,20 +226,66 @@ func (that *CaseInput) cvtUrlValues() *url.Values {
 		if itemValues == nil {
 			continue
 		}
-		/**
-			判断值类型
-		 */
-		switch itemValues.(type) {
-		case []interface{}:
-			array := itemValues.([]interface{})
-			for _, val := range array {
-				values.Add(key, val.(string))
-			}
-			break
-		default:
-			values.Add(key, itemValues.(string))
-			break
+
+		//转换
+		strings := stringCvt(itemValues)
+		for _, v := range strings {
+			values.Add(key, v)
 		}
 	}
 	return values
+}
+
+func stringCvt(itemValues interface{}) []string {
+	new := make([]string, 0)
+	switch itemValues.(type) {
+	case string:
+		return []string{itemValues.(string)}
+	case int64:
+		return []string{strconv.FormatInt(itemValues.(int64), 10)}
+	case bool:
+		return []string{strconv.FormatBool(itemValues.(bool))}
+	case []interface{}:
+		break
+	case []string:
+		return itemValues.([]string)
+	case []int64:
+		array := itemValues.([]int64)
+		for _, val := range array {
+			new = append(new, strconv.FormatInt(val, 10))
+		}
+		return new
+	case []bool:
+		array := itemValues.([]bool)
+		for _, val := range array {
+			new = append(new, strconv.FormatBool(val))
+		}
+		return new
+	default:
+		break
+	}
+	return new
+}
+
+func Curl(r *http.Request, body string) string {
+
+	buffer := bytes.NewBufferString("curl -X ")
+	buffer.WriteString(r.Method)
+	//参数
+	buffer.WriteString(` "` + r.URL.String() + `" `)
+
+	//报文头
+	for k, v := range r.Header {
+		buffer.WriteString(" -H ")
+		buffer.WriteString(`"` + k + ":" + strings.Join(v, ",") + `"`)
+		buffer.WriteString(" ")
+	}
+
+	//报文头
+	if !strings.EqualFold(r.Method, "GET") {
+		buffer.WriteString(" -d ")
+		buffer.WriteString(`"` + body + `"`)
+	}
+
+	return buffer.String()
 }

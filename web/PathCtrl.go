@@ -111,20 +111,12 @@ func GetPath(key uint64, primaryId string) (*module.MetaOut, error) {
 	path.Responses = nil
 
 	//获取标准示例验证脚本
-
 	return &module.MetaOut{
 		Path:     path,
 		Request:  req,
 		Response: resp,
-		//取值默认脚本
-		Valid: &module.MetaValid{
-			Script:     service.ValidTemplateScript,
-			ScriptType: "javascript",
-		},
 	}, nil
 }
-
-
 
 func GetPrimaryPath(response http.ResponseWriter, request *http.Request) {
 
@@ -137,6 +129,13 @@ func GetPrimaryPath(response http.ResponseWriter, request *http.Request) {
 	out, err := GetPath(ws.Kid, primaryId)
 	if err != nil {
 		view.JSON(response, 500, err.Error())
+		return
+	}
+
+	//获取当前工作空间中的默认脚本
+	out.Valid = &module.MetaValid{
+		Script:     ws.Script,
+		ScriptType: "javascript",
 	}
 
 	view.JSON(response, 200, out)

@@ -90,6 +90,19 @@ func RefreshWorkspace(response http.ResponseWriter, request *http.Request) {
 	view.JSON(response, 200, true)
 }
 
-func ChangeWorkspace(response http.ResponseWriter, request *http.Request) {
+func UpdateScript(response http.ResponseWriter, request *http.Request) {
+	body, _ := ioutil.ReadAll(request.Body)
+	ws := &db.Workspace{}
+	err := json.Unmarshal(body, ws)
+	if err != nil {
+		view.JSON(response, 500, err)
+		return
+	}
 
+	count, err := db.Conn.Id(ws.Kid).Update(db.Workspace{Script: ws.Script})
+	if count != 1 || err != nil {
+		panic(err)
+	}
+
+	view.JSON(response, 200, "成功")
 }

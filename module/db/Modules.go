@@ -18,6 +18,8 @@ type Workspace struct {
 	WsName      string `json:"wsName"      xorm:"varchar(64)   notnull 'ws_name'"`
 	WsKey       string `json:"wsKey"       xorm:"varchar(64)   notnull 'ws_key'"`
 	ApiUrl      string `json:"apiUrl"      xorm:"varchar(256)  notnull 'api_url'"`
+	Script      string `json:"script"      xorm:"text   	           'script'"`
+	ScriptType  string `json:"scriptType"  xorm:"varchar(64)           'script_type'"`
 }
 
 /**
@@ -52,7 +54,7 @@ type CaseLog struct {
 	ScriptType   string    `json:"scriptType"   xorm:"text 						'script_type'"`
 	MetaResult   string    `json:"metaResult"   xorm:"text 						'result'"`
 	Status       int       `json:"status"       xorm:"tinyint(3) notnull 		'status'"`
-	Curl         string    `json:"curl"         xorm:"varchar(128) notnull 		'curl'"`
+	Curl         string    `json:"curl"         xorm:"text 		                'curl'"`
 	CreateTime   time.Time `json:"createTime"   xorm:"datetime 					'create_time'"`
 }
 

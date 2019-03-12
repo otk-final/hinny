@@ -37,7 +37,7 @@ func main() {
 	router.Path("/workspace").Methods("POST").HandlerFunc(web.CreateWorkspace)
 	router.Path("/workspace/{kid}").Methods("DELETE").HandlerFunc(web.RemoveWorkspace)
 	router.Path("/workspace/action/refresh").Methods("POST").HandlerFunc(web.RefreshWorkspace)
-	router.Path("/workspace/action/change").Methods("POST").HandlerFunc(web.ChangeWorkspace)
+	router.Path("/workspace/action/update-script").Methods("POST").HandlerFunc(web.UpdateScript)
 
 	router.Path("/case/action/get-modules").Methods("GET").HandlerFunc(web.GetCaseModules)
 	router.Path("/case/action/execute").Methods("POST").HandlerFunc(web.CaseExecute)

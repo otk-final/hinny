@@ -4,12 +4,15 @@ import (
 	"otk-final/hinny/module"
 	"github.com/robertkrimen/otto"
 	"fmt"
+	"reflect"
+	"strings"
 )
 
 type ValidDefine struct {
-	vm     *otto.Otto
-	result []*module.MetaResult
-	script string
+	vm      *otto.Otto
+	result  []*module.MetaResult
+	request *module.MetaRequest
+	script  string
 }
 
 type ValidCode = int
@@ -20,78 +23,106 @@ const (
 	SUCCESS ValidCode = 1  //成功
 )
 
-const ValidTemplateScript = `
-/**
- *  公共函数,无参返回全部
- *  请求路径：$GetUri('version')
- *  请求头：  $GetHeader('tenantId')
- *  请求参数：$GetQuery('pageNo')
- *  请求报文：$GetBody()
- * 
- *  验证函数 testing(响应码,响应头,响应体)
- * 
- * 
- *  结果集：$AppendResult('规则说明','验证结果','是否通过[true/false]')
- **/
- 
-function testing(code,header,body){
-
-  //TODO
-  
-}
-`
-
-func NewValid(scriptType string, script string) *ValidDefine {
+func NewValid(script string, request *module.MetaRequest) *ValidDefine {
 
 	ctx := &ValidDefine{
-		script: script,
-		result: []*module.MetaResult{},
+		script:  script,
+		result:  []*module.MetaResult{},
+		request: request,
 	}
 
+	/**
+		如果脚本为空，直接返回
+	 */
+	if script == "" {
+		return nil
+	}
+
+	//运行初始化脚本
+
 	//javascript 虚拟执行环境
-
 	vm := otto.New()
-	//设置相关变量
-
 	//设置返回值
-	vm.Set("$AppendResult", ctx.vmAppendResult())
+	vm.Set("$appendResult", ctx.appendResultFunc())
 
+	//获取值
+	vm.Set("$getHeader", ctx.getValueFunc("header"))
+	vm.Set("$getUri", ctx.getValueFunc("uri"))
+	vm.Set("$getQuery", ctx.getValueFunc("query"))
+	vm.Set("$getBody", ctx.getBodyFunc())
+
+	//设置值
+	vm.Set("$setHeader", ctx.setValueFunc("header"))
+	vm.Set("$setUri", ctx.setValueFunc("uri"))
+	vm.Set("$setQuery", ctx.setValueFunc("query"))
+	vm.Set("$setBody", ctx.setBodyFunc())
+
+	value, err := vm.Run(script)
+	if err != nil {
+		ctx.result = append(ctx.result, &module.MetaResult{
+			Rule: "脚本加载编译错误",
+			Msg:  err.Error(),
+			Ok:   false,})
+	}
+	fmt.Println(value)
 	ctx.vm = vm
 	return ctx
 }
 
-func (that *ValidDefine) Valid(request *module.MetaRequest, resp *module.MetaResponse) ([]*module.MetaResult, ValidCode) {
+/**
+	初始化相关函数
+ */
+func (that *ValidDefine) BeforeInit() (request *module.MetaRequest, err error) {
+
 	/**
-		如果脚本为空，直接返回
+		方法不存在
 	 */
-	if that.script == "" {
-		return []*module.MetaResult{}, SUCCESS
+	init, err := that.vm.Get("init")
+	if !init.IsFunction() {
+		return that.request, nil
 	}
 
-	//设置方法
-	that.vm.Set("$GetHeader", vmGetValue(request.Header))
-	that.vm.Set("$GetUri", vmGetValue(request.Uri))
-	that.vm.Set("$GetQuery", vmGetValue(request.Query))
-	that.vm.Set("$GetBody", vmGetBody(request.Body))
+	values, err := that.vm.Call("init", nil)
+	/**
+		不存在，或者错误，返回
+	 */
+	if err != nil {
+		that.result = append(that.result, &module.MetaResult{
+			Rule: "脚本[init]编译错误",
+			Msg:  err.Error(),
+			Ok:   false,})
+		return that.request, err
+	}
+
+	fmt.Println(values)
+	return that.request, nil
+}
+
+func (that *ValidDefine) AfterValid(resp *module.MetaResponse) ([]*module.MetaResult, ValidCode) {
+
+	/**
+		方法不存在
+ 	*/
+	testing, err := that.vm.Get("testing")
+	if !testing.IsFunction() {
+		return that.result, SUCCESS
+	}
+
 
 	//转换报文体为json格式，方便调用
 	bodyEval, err := that.vm.Eval("(" + resp.Body + ")")
 
-	//运行初始化脚本
-	that.vm.Run(that.script)
-
 	//默认参数为 返回码，响应头，报文体
 	values, err := that.vm.Call("testing", nil, resp.Code, resp.Header, bodyEval)
 	if err != nil {
-		out := []*module.MetaResult{{
-			Rule: "脚本编译错误",
+		that.result = append(that.result, &module.MetaResult{
+			Rule: "脚本[testing]编译错误",
 			Msg:  err.Error(),
-			Ok:   false,}}
-		return out, FAIL
+			Ok:   false,})
 	}
 
 	//返回值，暂不做处理
-	fmt.Println(values.ToString())
+	fmt.Println(values)
 
 	previous := true
 	size := len(that.result)
@@ -119,7 +150,7 @@ func (that *ValidDefine) Valid(request *module.MetaRequest, resp *module.MetaRes
 	return that.result, SUCCESS
 }
 
-func (that *ValidDefine) vmAppendResult() func(call otto.FunctionCall) otto.Value {
+func (that *ValidDefine) appendResultFunc() func(call otto.FunctionCall) otto.Value {
 	return func(call otto.FunctionCall) otto.Value {
 		/**
 			获取参数
@@ -142,9 +173,14 @@ func (that *ValidDefine) vmAppendResult() func(call otto.FunctionCall) otto.Valu
 	}
 }
 
-func vmGetBody(body string) func(call otto.FunctionCall) otto.Value {
+func (that *ValidDefine) getBodyFunc() func(call otto.FunctionCall) otto.Value {
 	return func(call otto.FunctionCall) otto.Value {
-		body, err := call.Otto.Eval("(" + body + ")")
+
+		if that.request.Body == "" {
+			return otto.NullValue()
+		}
+
+		body, err := call.Otto.Eval("(" + that.request.Body + ")")
 		if err != nil {
 			bodyCtx, err := otto.ToValue(body)
 			if err != nil {
@@ -156,9 +192,67 @@ func vmGetBody(body string) func(call otto.FunctionCall) otto.Value {
 	}
 }
 
-func vmGetValue(typeValues []interface{}) func(call otto.FunctionCall) otto.Value {
+func (that *ValidDefine) setBodyFunc() func(call otto.FunctionCall) otto.Value {
+	return func(call otto.FunctionCall) otto.Value {
+
+		if that.request.Body == "" {
+			return otto.NullValue()
+		}
+		that.request.Body = call.Argument(0).String()
+		return call.This
+	}
+}
+
+func (that *ValidDefine) setValueFunc(funcType string) func(call otto.FunctionCall) otto.Value {
 
 	return func(call otto.FunctionCall) otto.Value {
+
+		values := that.request.GetTypeValues(funcType)
+		defer func() {
+			that.request.TypeValues(funcType, values)
+		}()
+
+		//属性名
+		argName := call.Argument(0).String()
+		//值
+		argValue, err := call.Argument(1).Export()
+		if err != nil {
+			return call.This
+		}
+		/**
+			值存在则替换
+		 */
+		size := len(values)
+		exist := false
+		for idx := 0; idx < size; idx++ {
+			itemMap := values[idx].(map[string]interface{})
+			if itemMap["name"].(string) == argName {
+				itemMap["value"] = argValue
+				exist = true
+			}
+		}
+		//不存在，则新增
+		if !exist {
+			typeName := reflect.TypeOf(argValue).String()
+			if strings.HasPrefix(typeName, "[]") {
+				typeName = "array"
+			} else {
+				typeName = "string"
+			}
+			values = append(values, map[string]interface{}{
+				"name":  argName,
+				"type":  typeName,
+				"value": argValue,
+			})
+		}
+		return call.This
+	}
+}
+
+func (that *ValidDefine) getValueFunc(funcType string) func(call otto.FunctionCall) otto.Value {
+
+	return func(call otto.FunctionCall) otto.Value {
+		typeValues := that.request.GetTypeValues(funcType)
 
 		var out otto.Value
 		var err error
@@ -175,7 +269,7 @@ func vmGetValue(typeValues []interface{}) func(call otto.FunctionCall) otto.Valu
 		}
 
 		//有参数返回第一个
-		argName := call.Argument(0).String()
+		argName, err := call.Argument(0).ToString()
 		for _, item := range typeValues {
 			itemMap := item.(map[string]interface{})
 			if itemMap["name"].(string) != argName {

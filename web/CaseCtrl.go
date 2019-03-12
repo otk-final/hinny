@@ -74,7 +74,7 @@ func CaseExecute(response http.ResponseWriter, request *http.Request) {
 	if err != nil {
 		panic(err)
 	}
-
+	//input.Request.TimeOut = 3000
 	//查询唯一请求
 	path := service.GetPathPrimary(ws.Kid, input.PrimaryId)
 	if path == nil {
@@ -265,7 +265,6 @@ func GetCaseLog(response http.ResponseWriter, request *http.Request) {
 		for _, tpl := range tplArray {
 			tplMap := tpl.(map[string]interface{})
 			exist, val := getVal(dbArray, tplMap["name"].(string))
-
 			//不存在，将当前require改为false,前端不进行默认勾选
 			tplMap["required"] = exist
 			if exist {
@@ -289,6 +288,7 @@ func GetCaseLog(response http.ResponseWriter, request *http.Request) {
 		ScriptType: log.ScriptType,
 	}
 	tpl.Result = logResults
+	tpl.Curl = log.Curl
 
 	view.JSON(response, 200, tpl)
 }
@@ -300,11 +300,11 @@ func GetCaseLogs(response http.ResponseWriter, request *http.Request) {
 	caseKid := request.URL.Query().Get("caseKid")
 
 	/**
-		查询数据库，创建时间倒叙
+		查询数据库，创建时间倒叙 只返回最近5条
 	 */
 	out := make([]*db.CaseLog, 0)
-	err := db.Conn.Cols("kid", "path", "status", "create_time").
-		Where("case_kid=?", caseKid).
+	err := db.Conn.Cols("kid", "case_kid", "path", "status", "create_time").
+		Where("case_kid=?", caseKid).Limit(5).
 		Desc("create_time").Find(&out)
 	if err != nil {
 		panic(err)

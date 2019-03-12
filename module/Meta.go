@@ -71,7 +71,30 @@ type MetaOut struct {
 	Path     *ApiPath      `json:"path"`
 	Request  *MetaRequest  `json:"request"`
 	Response *MetaResponse `json:"response"`
+	Curl     string        `json:"curl"`
 	Valid    *MetaValid    `json:"valid"`
 	Result   []*MetaResult `json:"result"`
 }
 
+//获取值
+func (that *MetaRequest) GetTypeValues(funcType string) []interface{} {
+	if funcType == "uri" {
+		return that.Uri
+	} else if funcType == "header" {
+		return that.Header
+	} else if funcType == "query" {
+		return that.Query
+	}
+	return nil
+}
+
+//设置值
+func (that *MetaRequest) TypeValues(funcType string, values []interface{}) {
+	if funcType == "uri" {
+		that.Uri = values
+	} else if funcType == "header" {
+		that.Header = values
+	} else if funcType == "query" {
+		that.Query = values
+	}
+}
