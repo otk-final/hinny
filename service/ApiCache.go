@@ -22,6 +22,12 @@ var apiDefinitionCached = make(map[uint64][]module.ApiDefinition)
 //互斥锁，防止同一时间修改缓存
 var lock = &sync.Mutex{}
 
+func ApiRemove(kid uint64){
+	delete(apiTagCached, kid)
+	delete(apiPathCached, kid)
+	delete(apiDefinitionCached, kid)
+}
+
 func ApiTagList(fetchHandler ApiHandler, ws *db.Workspace) ([]module.ApiTag, error) {
 	out, ok := apiTagCached[ws.Kid]
 	//不存在，刷新接口
@@ -49,7 +55,6 @@ func ApiPathList(fetchHandler ApiHandler, ws *db.Workspace) ([]module.ApiPath, e
 }
 
 func ApiRefresh(fetchHandler ApiHandler, ws *db.Workspace) error {
-
 
 	lock.Lock()
 	defer lock.Unlock()

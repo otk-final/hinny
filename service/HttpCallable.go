@@ -101,10 +101,8 @@ func dispatch(host string, path *module.ApiPath, input *CaseInput) (*http.Reques
 	reqUri := input.cvtUrl(host, path.Path)
 	reqValues := *input.cvtUrlValues()
 
-	//GET请求参数拼接在URL后面
-	if strings.EqualFold(path.Method, "GET") {
-		reqUri.RawQuery = reqValues.Encode()
-	}
+	//所有请求参数拼接在URL后面
+	reqUri.RawQuery = reqValues.Encode()
 
 	fmt.Println("请求地址:" + reqUri.String())
 
@@ -116,8 +114,7 @@ func dispatch(host string, path *module.ApiPath, input *CaseInput) (*http.Reques
 	}
 
 	//报文头提交
-	if !strings.EqualFold(path.Method, "GET") {
-		request.PostForm = reqValues
+	if strings.Contains("POST,PUT", path.Method) {
 		request.Body = ioutil.NopCloser(strings.NewReader(input.Request.Body))
 	}
 
@@ -179,6 +176,12 @@ func (that *CaseInput) cvtHeader() *http.Header {
 			reqHeader.Add(name, v)
 		}
 	}
+
+	//头默认为json
+	if contentType := reqHeader.Get("Content-Type"); contentType == "" {
+		reqHeader.Set("Content-Type","application/json")
+	}
+
 	return reqHeader
 }
 
@@ -246,6 +249,10 @@ func stringCvt(itemValues interface{}) []string {
 	case bool:
 		return []string{strconv.FormatBool(itemValues.(bool))}
 	case []interface{}:
+		array := itemValues.([]interface{})
+		for _, val := range array {
+			new = append(new, stringCvt(val)...)
+		}
 		break
 	case []string:
 		return itemValues.([]string)

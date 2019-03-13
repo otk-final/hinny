@@ -9,6 +9,7 @@ import (
 	"github.com/gorilla/mux"
 	"otk-final/hinny/service"
 	"otk-final/hinny/service/swagger"
+	"strconv"
 )
 
 func GetWorkspaceFromHeader(request *http.Request) *db.Workspace {
@@ -61,13 +62,17 @@ func CreateWorkspace(response http.ResponseWriter, request *http.Request) {
 
 func RemoveWorkspace(response http.ResponseWriter, request *http.Request) {
 	vars := mux.Vars(request)
+	kid := vars["kid"]
 	//删除
-	_, err := db.Conn.Id(vars["kid"]).Delete(&db.Workspace{})
+	_, err := db.Conn.Id(kid).Delete(&db.Workspace{})
 	if err != nil {
 		view.JSON(response, 500, err)
 		return
 	}
-	//TODO 清除缓存
+
+	// 清除缓存
+	uintKid, _ := strconv.ParseUint(kid, 10, 64)
+	service.ApiRemove(uintKid)
 
 	view.JSON(response, 200, true)
 }

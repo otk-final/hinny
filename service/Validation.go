@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"encoding/json"
 )
 
 type ValidDefine struct {
@@ -108,7 +109,6 @@ func (that *ValidDefine) AfterValid(resp *module.MetaResponse) ([]*module.MetaRe
 		return that.result, SUCCESS
 	}
 
-
 	//转换报文体为json格式，方便调用
 	bodyEval, err := that.vm.Eval("(" + resp.Body + ")")
 
@@ -198,7 +198,20 @@ func (that *ValidDefine) setBodyFunc() func(call otto.FunctionCall) otto.Value {
 		if that.request.Body == "" {
 			return otto.NullValue()
 		}
-		that.request.Body = call.Argument(0).String()
+		obj, err := call.Argument(0).Export()
+		if err != nil {
+			fmt.Println(err.Error())
+			return call.This
+		}
+		//重新序列化为json格式
+
+		byte, err := json.Marshal(obj)
+		if err != nil {
+			fmt.Println(err.Error())
+			return call.This
+		}
+
+		that.request.Body = string(byte)
 		return call.This
 	}
 }
