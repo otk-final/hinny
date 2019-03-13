@@ -5,20 +5,41 @@ import (
 	"net/http"
 	"log"
 	"otk-final/hinny/web"
+	"fmt"
 	"otk-final/hinny/module/db"
-	"time"
+	"otk-final/hinny/module/global"
 )
 
-func main() {
+func init() {
 
+	initDB()
+
+	initIDGeneral()
+}
+
+//加载数据库配置文件
+func initDB() {
+	dbConf := global.Conf.GetStringMapString("db")
+	dbUrl := fmt.Sprintf("%s:%s@(%s)/%s", dbConf["username"], dbConf["password"], dbConf["host"], dbConf["url"])
 	//数据库
-	db.Install("mysql", "dev62:dev62.123456@(192.168.30.62:3306)/platform_behavior?charset=utf8")
+	db.Install(dbConf["driver"], dbUrl)
+
+}
+
+//加载雪花算法配置
+func initIDGeneral() {
+
+	machineID := global.Conf.GetInt("snowflake.machineID")
+	startTime := global.Conf.GetTime("snowflake.startTime")
+
 	//ID生成规则
-	db.InstallIDGeneral(time.Now(), 11)
+	db.InstallIDGeneral(startTime, uint16(machineID))
+}
+
+//加载web请求路径配置
+func initWebCtrl() *mux.Router {
 
 	router := mux.NewRouter()
-	router.Host("127.0.0.1").Name("业务自动化测试平台")
-
 	router.PathPrefix("/").Methods("OPTIONS").HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		writer.WriteHeader(200)
 	})
@@ -31,22 +52,19 @@ func main() {
 	router.Path("/path/action/primary").Methods("GET").HandlerFunc(web.GetPrimaryPath)
 	router.Path("/path/action/execute").Methods("POST")
 	router.Path("/path/action/submit").Methods("POST")
-
 	/*作业空间服务*/
 	router.Path("/workspace/action/list").Methods("GET").HandlerFunc(web.GetWorkspaces)
 	router.Path("/workspace").Methods("POST").HandlerFunc(web.CreateWorkspace)
 	router.Path("/workspace/{kid}").Methods("DELETE").HandlerFunc(web.RemoveWorkspace)
 	router.Path("/workspace/action/refresh").Methods("POST").HandlerFunc(web.RefreshWorkspace)
 	router.Path("/workspace/action/update-script").Methods("POST").HandlerFunc(web.UpdateScript)
-
+	/*案例服务*/
 	router.Path("/case/action/get-modules").Methods("GET").HandlerFunc(web.GetCaseModules)
 	router.Path("/case/action/execute").Methods("POST").HandlerFunc(web.CaseExecute)
 	router.Path("/case/action/save").Methods("POST").HandlerFunc(web.CaseSave)
 	router.Path("/case/action/list").Methods("GET").HandlerFunc(web.GetCases)
 	router.Path("/case/action/get-logs").Methods("GET").HandlerFunc(web.GetCaseLogs)
 	router.Path("/case/{kid}").Methods("GET").HandlerFunc(web.GetCaseLog)
-
-	//TODO 验证脚本，默认参数
 
 	//全部支持跨域
 	router.Use(func(next http.Handler) http.Handler {
@@ -58,8 +76,16 @@ func main() {
 	})
 	router.Use(mux.CORSMethodMiddleware(router))
 
+	return router
+}
+
+func main() {
+
+	//地址端口
+	addr := fmt.Sprintf("%s:%s", global.Conf.GetString("server.host"), global.Conf.GetString("server.port"))
+
 	//启动服务
-	err := http.ListenAndServe(":18080", router)
+	err := http.ListenAndServe(addr, initWebCtrl())
 	if err != nil {
 		log.Fatal("ListenAndServe", err)
 	}

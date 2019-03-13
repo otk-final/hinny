@@ -5,7 +5,6 @@ import (
 	"otk-final/hinny/module"
 	"otk-final/hinny/module/db"
 	"time"
-	"strings"
 )
 
 type ApiHandler interface {
@@ -22,7 +21,7 @@ var apiDefinitionCached = make(map[uint64][]module.ApiDefinition)
 //互斥锁，防止同一时间修改缓存
 var lock = &sync.Mutex{}
 
-func ApiRemove(kid uint64){
+func ApiRemove(kid uint64) {
 	delete(apiTagCached, kid)
 	delete(apiPathCached, kid)
 	delete(apiDefinitionCached, kid)
@@ -59,14 +58,8 @@ func ApiRefresh(fetchHandler ApiHandler, ws *db.Workspace) error {
 	lock.Lock()
 	defer lock.Unlock()
 
-	suffix := ""
-	if !strings.HasSuffix(ws.ApiUrl, "/") {
-		suffix = "/"
-	}
-	realPath := ws.ApiUrl + suffix + "v2/api-docs"
-
 	//查询
-	apiTags, apiPaths, apiDefinitions := fetchHandler.DocFetch(realPath)
+	apiTags, apiPaths, apiDefinitions := fetchHandler.DocFetch(ws.DocUrl)
 
 	//添加至缓存
 	apiTagCached[ws.Kid] = apiTags

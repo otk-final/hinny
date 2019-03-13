@@ -7,6 +7,7 @@ import (
 	"github.com/sony/sonyflake"
 	"log"
 	"time"
+	"otk-final/hinny/module/global"
 )
 
 /**
@@ -18,6 +19,7 @@ type Workspace struct {
 	WsName      string `json:"wsName"      xorm:"varchar(64)   notnull 'ws_name'"`
 	WsKey       string `json:"wsKey"       xorm:"varchar(64)   notnull 'ws_key'"`
 	ApiUrl      string `json:"apiUrl"      xorm:"varchar(256)  notnull 'api_url'"`
+	DocUrl      string `json:"docUrl"      xorm:"varchar(256)  notnull 'doc_url'"`
 	Script      string `json:"script"      xorm:"text   	           'script'"`
 	ScriptType  string `json:"scriptType"  xorm:"varchar(64)           'script_type'"`
 }
@@ -82,7 +84,7 @@ func Install(driverName string, dataSourceName string) {
 		log.Fatal("ping db ping:", err.Error())
 	}
 	//统一去除前缀前缀
-	mapper := core.NewPrefixMapper(core.SnakeMapper{}, "hinny_")
+	mapper := core.NewPrefixMapper(core.SnakeMapper{}, global.Conf.GetString("db.tablePrefix"))
 	engine.ShowSQL(true)
 	engine.SetTableMapper(mapper)
 	//暴露
