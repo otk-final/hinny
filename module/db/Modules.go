@@ -14,7 +14,7 @@ import (
 	工作空间表
  */
 type Workspace struct {
-	Kid         uint64 `json:"kid"         xorm:"pk bigint(20) notnull 'kid'"`
+	Kid         uint64 `json:"kid,string"  xorm:"pk bigint(20) notnull 'kid'"`
 	Application string `json:"application" xorm:"varchar(64)   notnull 'application'"`
 	WsName      string `json:"wsName"      xorm:"varchar(64)   notnull 'ws_name'"`
 	WsKey       string `json:"wsKey"       xorm:"varchar(64)   notnull 'ws_key'"`
@@ -28,7 +28,7 @@ type Workspace struct {
 	案例模板
  */
 type CaseTemplate struct {
-	Kid         uint64    `json:"kid"           xorm:"pk bigint(20) 			'kid'"`
+	Kid         uint64    `json:"kid,string"    xorm:"pk bigint(20) 			'kid'"`
 	Application string    `json:"application"   xorm:"varchar(255) notnull 		'application'"`
 	Module      string    `json:"module"        xorm:"varchar(255) 				'module'"`
 	CaseType    string    `json:"caseType"      xorm:"varchar(255) 				'case_type'"`
@@ -45,19 +45,19 @@ type CaseTemplate struct {
 	案例日志
  */
 type CaseLog struct {
-	Kid          uint64    `json:"kid"          xorm:"pk bigint(20) 		    'kid'"`
-	WsKId        uint64    `json:"wsKid"        xorm:"bigint(20) 				'ws_kid'"`
-	CaseKid      uint64    `json:"caseKid"      xorm:"bigint(20) 				'case_kid'"`
-	PathIdentity string    `json:"pathIdentity" xorm:"varchar(64) 				'path_identity'"`
-	Path         string    `json:"path"         xorm:"bigint(20) 				'path'"`
-	MetaRequest  string    `json:"metaRequest"  xorm:"text 						'request'"`
-	MetaResponse string    `json:"metaResponse" xorm:"text 						'response'"`
-	Script       string    `json:"script"       xorm:"text 						'script'"`
-	ScriptType   string    `json:"scriptType"   xorm:"text 						'script_type'"`
-	MetaResult   string    `json:"metaResult"   xorm:"text 						'result'"`
-	Status       int       `json:"status"       xorm:"tinyint(3) notnull 		'status'"`
-	Curl         string    `json:"curl"         xorm:"text 		                'curl'"`
-	CreateTime   time.Time `json:"createTime"   xorm:"datetime 					'create_time'"`
+	Kid          uint64    `json:"kid,string"      xorm:"pk bigint(20) 		        'kid'"`
+	WsKId        uint64    `json:"wsKid,string"    xorm:"bigint(20) 				'ws_kid'"`
+	CaseKid      uint64    `json:"caseKid,string"  xorm:"bigint(20) 				'case_kid'"`
+	PathIdentity string    `json:"pathIdentity"    xorm:"varchar(64) 				'path_identity'"`
+	Path         string    `json:"path"            xorm:"bigint(20) 				'path'"`
+	MetaRequest  string    `json:"metaRequest"     xorm:"text 						'request'"`
+	MetaResponse string    `json:"metaResponse"    xorm:"text 						'response'"`
+	Script       string    `json:"script"          xorm:"text 						'script'"`
+	ScriptType   string    `json:"scriptType"      xorm:"text 						'script_type'"`
+	MetaResult   string    `json:"metaResult"      xorm:"text 						'result'"`
+	Status       int       `json:"status"          xorm:"tinyint(3) notnull 		'status'"`
+	Curl         string    `json:"curl"            xorm:"text 		                'curl'"`
+	CreateTime   time.Time `json:"createTime"      xorm:"datetime 					'create_time'"`
 }
 
 var Conn *xorm.Engine

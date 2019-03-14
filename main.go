@@ -29,6 +29,8 @@ func initDB() {
 //加载雪花算法配置
 func initIDGeneral() {
 
+	application := global.Conf.GetString("application")
+	fmt.Println(application)
 	machineID := global.Conf.GetInt("snowflake.machineID")
 	startTime := global.Conf.GetTime("snowflake.startTime")
 
