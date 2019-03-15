@@ -19,7 +19,7 @@ import (
  */
 type CaseInput struct {
 	PrimaryId string              `json:"primaryId"`
-	CaseKid   uint64              `json:"caseKid"`
+	CaseKid   uint64              `json:"caseKid,string"`
 	Request   *module.MetaRequest `json:"request"`
 	Valid     *module.MetaValid   `json:"valid"`
 }
@@ -28,7 +28,7 @@ type CaseInput struct {
 	案例输出
  */
 type CaseOutput struct {
-	LogKid   uint64               `json:"logKid"`
+	LogKid   uint64               `json:"logKid,string"`
 	Time     time.Duration        `json:"time"`
 	Curl     string               `json:"curl"`
 	Response *module.MetaResponse `json:"response"`

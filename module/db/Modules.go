@@ -8,6 +8,7 @@ import (
 	"log"
 	"time"
 	"otk-final/hinny/module/global"
+	"fmt"
 )
 
 /**
@@ -71,17 +72,17 @@ var idGeneral *sonyflake.Sonyflake
 
 func Install(driverName string, dataSourceName string) {
 	/*数据库支持*/
-
+	fmt.Println("")
 	engine, err := xorm.NewEngine(driverName, dataSourceName)
 	if err != nil {
-		log.Fatal("initializing db :", err.Error())
+		log.Println("initializing db :", err.Error())
 	}
 	//最大连接数
-	engine.SetMaxIdleConns(10)
+	engine.SetMaxIdleConns(global.Conf.GetInt("db.maxConn"))
 
 	err = engine.Ping()
 	if err != nil {
-		log.Fatal("ping db ping:", err.Error())
+		log.Println("ping db ping:", err.Error())
 	}
 	//统一去除前缀前缀
 	mapper := core.NewPrefixMapper(core.SnakeMapper{}, global.Conf.GetString("db.tablePrefix"))

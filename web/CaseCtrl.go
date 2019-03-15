@@ -20,7 +20,7 @@ type CaseModuleGroup struct {
 }
 
 type CaseArchiveInput struct {
-	LogKid      uint64 `json:"logKid"`
+	LogKid      uint64 `json:"logKid,string"`
 	Module      string `json:"module"`
 	CaseType    string `json:"caseType"`
 	CaseName    string `json:"caseName"`

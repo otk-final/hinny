@@ -12,6 +12,9 @@ import (
 
 func init() {
 
+	application := global.Conf.GetString("application")
+	fmt.Println(application)
+
 	initDB()
 
 	initIDGeneral()
@@ -21,6 +24,7 @@ func init() {
 func initDB() {
 	dbConf := global.Conf.GetStringMapString("db")
 	dbUrl := fmt.Sprintf("%s:%s@(%s)/%s", dbConf["username"], dbConf["password"], dbConf["host"], dbConf["url"])
+	fmt.Printf("数据库:%s", dbUrl)
 	//数据库
 	db.Install(dbConf["driver"], dbUrl)
 
@@ -29,8 +33,6 @@ func initDB() {
 //加载雪花算法配置
 func initIDGeneral() {
 
-	application := global.Conf.GetString("application")
-	fmt.Println(application)
 	machineID := global.Conf.GetInt("snowflake.machineID")
 	startTime := global.Conf.GetTime("snowflake.startTime")
 
@@ -41,10 +43,15 @@ func initIDGeneral() {
 //加载web请求路径配置
 func initWebCtrl() *mux.Router {
 
-	router := mux.NewRouter()
+	router := mux.NewRouter().StrictSlash(true)
+
 	router.PathPrefix("/").Methods("OPTIONS").HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		writer.WriteHeader(200)
 	})
+
+	//静态资源
+	router.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))))
+	router.Path("/").Methods("GET").HandlerFunc(web.Index)
 
 	/*服务接口*/
 	router.Path("/service/action/list").Methods("GET").HandlerFunc(web.GetServices)
@@ -83,9 +90,12 @@ func initWebCtrl() *mux.Router {
 
 func main() {
 
+
+
 	//地址端口
 	addr := fmt.Sprintf("%s:%s", global.Conf.GetString("server.host"), global.Conf.GetString("server.port"))
 
+	fmt.Printf("服务地址:%s", addr)
 	//启动服务
 	err := http.ListenAndServe(addr, initWebCtrl())
 	if err != nil {

@@ -13,6 +13,7 @@ application = "业务接口自测平台"
  username = "dev62"
  password = "dev62.123456"
  tablePrefix = "hinny_"
+ maxConn = 10
 
 # web服务配置
 [server]
