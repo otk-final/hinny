@@ -74,10 +74,12 @@ func (handler *SwaggerHandler) DocFetch(fetchUrl string) ([]module.ApiTag, []mod
 	tagPathCounts := make(map[string]int)
 	for k, v := range paths {
 		//转换
-		tagName, slice := handler.convertPath(k, v)
-		//存在继续最近数量
-		tagPathCounts[tagName] = tagPathCounts[tagName] + len(slice)
-		apiPaths = append(apiPaths, slice...)
+		tagsNameMap := handler.convertPath(k, v)
+		for tagName, slice := range tagsNameMap {
+			//存在继续最近数量
+			tagPathCounts[tagName] = tagPathCounts[tagName] + len(slice)
+			apiPaths = append(apiPaths, slice...)
+		}
 	}
 
 	//元数据
@@ -95,7 +97,15 @@ func (handler *SwaggerHandler) DocFetch(fetchUrl string) ([]module.ApiTag, []mod
 
 	//回填Tag中的数量
 	for i := 0; i < len(apiTags); i++ {
-		apiTags[i].PathCount = tagPathCounts[apiTags[i].Name]
+		name := apiTags[i].Name
+		apiTags[i].PathCount = tagPathCounts[name]
+		//删除当前key
+		delete(tagPathCounts, name)
+	}
+
+	//方法级别自定义Tag
+	for k, v := range tagPathCounts {
+		apiTags = append(apiTags, module.ApiTag{Name: k, Description: k, PathCount: v})
 	}
 
 	//回填路径中的所属Tag,和元数据definition
@@ -118,20 +128,21 @@ func getTag(array []module.ApiTag, name string) *module.ApiTag {
 /**
 返回当前tag和方法
 */
-func (handler *SwaggerHandler) convertPath(key string, val interface{}) (string, []module.ApiPath) {
-	pathArray := make([]module.ApiPath, 0)
+func (handler *SwaggerHandler) convertPath(key string, val interface{}) map[string][]module.ApiPath {
+
 	methods := val.(map[string]interface{})
-	var tagName string
+	tagsNameMap := map[string][]module.ApiPath{}
+
 	for mk, mv := range methods {
+
 		item := mv.(map[string]interface{})
 		//唯一标识
-		tagName = item["tags"].([]interface{})[0].(string)
+		tagNames := item["tags"].([]interface{})
 		//参数
 		parameters := item["parameters"].([]interface{})
 		//独立方法
-		path := module.ApiPath{
+		path := &module.ApiPath{
 			PrimaryId:   item["operationId"].(string),
-			TagName:     tagName,
 			Path:        key,
 			Method:      mk,
 			Parameters:  parameters,
@@ -139,7 +150,20 @@ func (handler *SwaggerHandler) convertPath(key string, val interface{}) (string,
 			Deprecated:  item["deprecated"].(bool),
 			Responses:   item["responses"].(map[string]interface{}),
 		}
-		pathArray = append(pathArray, path)
+
+		for _, tagName := range tagNames {
+
+			tn := tagName.(string)
+
+			//拷贝
+			p1 := *path
+			cp := &p1
+
+			cp.TagName = tagName.(string)
+			cp.PrimaryId = cp.TagName + ":" + cp.PrimaryId
+
+			tagsNameMap[tn] = append(tagsNameMap[tn], *cp)
+		}
 	}
-	return tagName, pathArray
+	return tagsNameMap
 }
