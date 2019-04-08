@@ -143,7 +143,11 @@ func GetPrimaryPath(response http.ResponseWriter, request *http.Request) {
 
 func matchPath(findType string, findValue string, path *module.ApiPath,
 	matchFunc func(target string, srcArray ... string) bool) bool {
+
 	if findType == "service" {
+		if path.Tag == nil {
+			return matchFunc(findValue, path.Description)
+		}
 		return matchFunc(findValue, path.Tag.Name, path.Tag.Description, path.Description)
 	}
 	if findType == "path" {

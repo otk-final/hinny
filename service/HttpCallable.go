@@ -114,7 +114,7 @@ func dispatch(host string, path *module.ApiPath, input *CaseInput) (*http.Reques
 	}
 
 	//报文头提交
-	if strings.Contains("POST,PUT", path.Method) {
+	if strings.Contains("POST,PUT", path.Method) || strings.Contains("post,put", path.Method){
 		request.Body = ioutil.NopCloser(strings.NewReader(input.Request.Body))
 	}
 
