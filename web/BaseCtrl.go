@@ -1,17 +1,17 @@
 package web
 
 import (
-	"github.com/otk-final/respond"
 	"net/http"
+	"github.com/otk-final/lets-go/response"
 )
 
 type BaseCtrl interface {
 }
 
-var view *respond.Engine
+var view *response.Engine
 
 func init() {
-	view = respond.New()
+	view = response.New()
 	view.LoadHTMLGlob("./view/*")
 }
 

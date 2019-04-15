@@ -30,13 +30,6 @@
   revision = "a7962380ca08b5a188038c69871b8d3fbdf31e89"
   version = "v1.7.0"
 
-
-[[projects]]
-  branch = "master"
-  name = "github.com/otk-final/respond"
-  packages = ["."]
-  revision = "16096ece9a9aaa108c0f0537a18c82b5c792c68b"
-
 [[projects]]
   branch = "master"
   name = "github.com/robertkrimen/otto"

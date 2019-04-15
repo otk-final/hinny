@@ -7,7 +7,7 @@ import (
 	"otk-final/hinny/service/swagger"
 	"otk-final/hinny/module"
 	"encoding/json"
-	"github.com/kataras/iris/core/errors"
+	"errors"
 )
 
 func init() {
