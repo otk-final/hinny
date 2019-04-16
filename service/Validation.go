@@ -32,12 +32,7 @@ func NewValid(script string, request *module.MetaRequest) *ValidDefine {
 		request: request,
 	}
 
-	/**
-		如果脚本为空，直接返回
-	 */
-	if script == "" {
-		return nil
-	}
+
 
 	//运行初始化脚本
 
@@ -57,6 +52,16 @@ func NewValid(script string, request *module.MetaRequest) *ValidDefine {
 	vm.Set("$setUri", ctx.setValueFunc("uri"))
 	vm.Set("$setQuery", ctx.setValueFunc("query"))
 	vm.Set("$setBody", ctx.setBodyFunc())
+
+
+	/**
+		如果脚本为空，直接返回
+ 	*/
+	if script == "" {
+		ctx.vm = vm
+		return ctx
+	}
+
 
 	value, err := vm.Run(script)
 	if err != nil {
