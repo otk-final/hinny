@@ -16,7 +16,12 @@ func init() {
 
 func GetServices(response http.ResponseWriter, request *http.Request) {
 	//当前工作空间
-	ws := GetWorkspaceFromHeader(request)
+	ws, err := GetWorkspaceFromHeader(request)
+	if err != nil {
+		view.JSON(response, 200, []interface{}{})
+		return
+	}
+
 	//查询
 	out, err := service.ApiTagList(&swagger.SwaggerHandler{}, ws)
 	if err != nil {
@@ -30,7 +35,12 @@ func GetServices(response http.ResponseWriter, request *http.Request) {
 func GetPaths(response http.ResponseWriter, request *http.Request) {
 
 	//当前工作空间
-	ws := GetWorkspaceFromHeader(request)
+	ws, err := GetWorkspaceFromHeader(request)
+	if err != nil {
+		view.JSON(response, 200, []interface{}{})
+		return
+	}
+
 	findType := request.URL.Query().Get("type")
 	findValue := request.URL.Query().Get("typeValue")
 
@@ -121,7 +131,11 @@ func GetPath(key uint64, primaryId string) (*module.MetaOut, error) {
 func GetPrimaryPath(response http.ResponseWriter, request *http.Request) {
 
 	//当前工作空间
-	ws := GetWorkspaceFromHeader(request)
+	ws, err := GetWorkspaceFromHeader(request)
+	if err != nil {
+		view.JSON(response, 500, err.Error())
+		return
+	}
 
 	values := request.URL.Query()
 	primaryId := values["primaryId"][0]

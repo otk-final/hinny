@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"github.com/gorilla/mux"
 	"otk-final/hinny/module"
+	"otk-final/hinny/module/global"
 )
 
 type CaseModuleGroup struct {
@@ -37,8 +38,9 @@ func GetCaseModules(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
+	tablePrefix := global.Conf.GetString("db.tablePrefix")
 	rows, err := db.Conn.Select("module,group_concat(case_type) caseTypes").
-		Table("hinny_case_template").
+		Table(tablePrefix+"case_template").
 		Where("application = ?", application).
 		GroupBy("module").Query()
 
@@ -65,12 +67,16 @@ func GetCaseModules(response http.ResponseWriter, request *http.Request) {
 	案例执行
  */
 func CaseExecute(response http.ResponseWriter, request *http.Request) {
-	ws := GetWorkspaceFromHeader(request)
+	ws, err := GetWorkspaceFromHeader(request)
+	if err != nil {
+		view.JSON(response, 500, err.Error())
+		return
+	}
 
 	//获取
 	body, _ := ioutil.ReadAll(request.Body)
 	input := &service.CaseInput{}
-	err := json.Unmarshal(body, input)
+	err = json.Unmarshal(body, input)
 	if err != nil {
 		panic(err)
 	}
@@ -310,18 +316,5 @@ func GetCaseLogs(response http.ResponseWriter, request *http.Request) {
 		panic(err)
 	}
 
-	view.JSON(response, 200, out)
-}
-
-func GetCaseTpl(response http.ResponseWriter, request *http.Request) {
-	//获取Path相关基本信息
-	out, err := GetPath(0, "")
-	if err != nil {
-		view.JSON(response, 500, err.Error())
-		return
-	}
-	//TODO 封装相关验证信息
-
-	//封装返回  MetaRequest/MetaValid
 	view.JSON(response, 200, out)
 }

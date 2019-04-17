@@ -10,16 +10,21 @@ import (
 	"otk-final/hinny/service"
 	"otk-final/hinny/service/swagger"
 	"strconv"
+	"errors"
 )
 
-func GetWorkspaceFromHeader(request *http.Request) *db.Workspace {
+func GetWorkspaceFromHeader(request *http.Request) (*db.Workspace, error) {
 	wsKid := request.Header.Get("workspace")
+	if wsKid == "" {
+		return nil, errors.New("工作空间不能为nil")
+	}
+
 	ws := &db.Workspace{}
 	ok, err := db.Conn.ID(wsKid).Get(ws)
 	if !ok || err != nil {
-		panic(err)
+		return nil, errors.New("工作空间查询异常")
 	}
-	return ws
+	return ws, nil
 }
 
 func GetWorkspaces(response http.ResponseWriter, request *http.Request) {
