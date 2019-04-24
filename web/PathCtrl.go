@@ -1,13 +1,13 @@
 package web
 
 import (
-	"net/http"
-	"otk-final/hinny/service"
-	"strings"
-	"otk-final/hinny/service/swagger"
-	"otk-final/hinny/module"
 	"encoding/json"
 	"errors"
+	"github.com/otk-final/hinny/module"
+	"github.com/otk-final/hinny/service"
+	"github.com/otk-final/hinny/swagger"
+	"net/http"
+	"strings"
 )
 
 func init() {
@@ -51,7 +51,7 @@ func GetPaths(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	multipleContains := func(target string, srcArray ... string) bool {
+	multipleContains := func(target string, srcArray ...string) bool {
 		for _, src := range srcArray {
 			if strings.Contains(src, target) {
 				return true
@@ -95,9 +95,9 @@ func GetPath(key uint64, primaryId string) (*module.MetaOut, error) {
 	}
 
 	/**
-		1，生成scheme文件
-		2，补齐相关参数
-	 */
+	1，生成scheme文件
+	2，补齐相关参数
+	*/
 	req := &module.MetaRequest{
 		Header: kindOf(parameters, "header"),
 		Uri:    kindOf(parameters, "path"),
@@ -156,7 +156,7 @@ func GetPrimaryPath(response http.ResponseWriter, request *http.Request) {
 }
 
 func matchPath(findType string, findValue string, path *module.ApiPath,
-	matchFunc func(target string, srcArray ... string) bool) bool {
+	matchFunc func(target string, srcArray ...string) bool) bool {
 
 	if findType == "service" {
 		if path.Tag == nil {

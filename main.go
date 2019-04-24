@@ -1,18 +1,17 @@
 package main
 
 import (
-	"github.com/gorilla/mux"
-	"net/http"
-	"log"
-	"otk-final/hinny/web"
 	"fmt"
-	"otk-final/hinny/module/db"
-	"otk-final/hinny/module/global"
+	"github.com/gorilla/mux"
+	"github.com/otk-final/hinny/module"
+	"github.com/otk-final/hinny/web"
+	"log"
+	"net/http"
 )
 
 func init() {
 
-	application := global.Conf.GetString("application")
+	application := module.Conf.GetString("application")
 	fmt.Println(application)
 
 	initDB()
@@ -22,22 +21,22 @@ func init() {
 
 //加载数据库配置文件
 func initDB() {
-	dbConf := global.Conf.GetStringMapString("db")
+	dbConf := module.Conf.GetStringMapString("db")
 	dbUrl := fmt.Sprintf("%s:%s@(%s)/%s", dbConf["username"], dbConf["password"], dbConf["host"], dbConf["url"])
 	fmt.Printf("数据库:%s", dbUrl)
 	//数据库
-	db.Install(dbConf["driver"], dbUrl)
+	module.Install(dbConf["driver"], dbUrl)
 
 }
 
 //加载雪花算法配置
 func initIDGeneral() {
 
-	machineID := global.Conf.GetInt("snowflake.machineID")
-	startTime := global.Conf.GetTime("snowflake.startTime")
+	machineID := module.Conf.GetInt("snowflake.machineID")
+	startTime := module.Conf.GetTime("snowflake.startTime")
 
 	//ID生成规则
-	db.InstallIDGeneral(startTime, uint16(machineID))
+	module.InstallIDGeneral(startTime, uint16(machineID))
 }
 
 //加载web请求路径配置
@@ -90,10 +89,8 @@ func initWebCtrl() *mux.Router {
 
 func main() {
 
-
-
 	//地址端口
-	addr := fmt.Sprintf("%s:%s", global.Conf.GetString("server.host"), global.Conf.GetString("server.port"))
+	addr := fmt.Sprintf("%s:%s", module.Conf.GetString("server.host"), module.Conf.GetString("server.port"))
 
 	fmt.Printf("服务地址:%s", addr)
 	//启动服务

@@ -1,10 +1,10 @@
 package swagger
 
 import (
-	"net/http"
-	"io/ioutil"
 	"encoding/json"
-	"otk-final/hinny/module"
+	"github.com/otk-final/hinny/module"
+	"io/ioutil"
+	"net/http"
 )
 
 /**

@@ -1,9 +1,8 @@
 package service
 
 import (
+	"github.com/otk-final/hinny/module"
 	"sync"
-	"otk-final/hinny/module"
-	"otk-final/hinny/module/db"
 	"time"
 )
 
@@ -12,8 +11,8 @@ type ApiHandler interface {
 }
 
 /**
-	接口类数据进行缓存
- */
+接口类数据进行缓存
+*/
 var apiTagCached = make(map[uint64][]module.ApiTag)
 var apiPathCached = make(map[uint64][]module.ApiPath)
 var apiDefinitionCached = make(map[uint64][]module.ApiDefinition)
@@ -27,7 +26,7 @@ func ApiRemove(kid uint64) {
 	delete(apiDefinitionCached, kid)
 }
 
-func ApiTagList(fetchHandler ApiHandler, ws *db.Workspace) ([]module.ApiTag, error) {
+func ApiTagList(fetchHandler ApiHandler, ws *module.Workspace) ([]module.ApiTag, error) {
 	out, ok := apiTagCached[ws.Kid]
 	//不存在，刷新接口
 	if !ok {
@@ -40,7 +39,7 @@ func ApiTagList(fetchHandler ApiHandler, ws *db.Workspace) ([]module.ApiTag, err
 	return out, nil
 }
 
-func ApiPathList(fetchHandler ApiHandler, ws *db.Workspace) ([]module.ApiPath, error) {
+func ApiPathList(fetchHandler ApiHandler, ws *module.Workspace) ([]module.ApiPath, error) {
 	out, ok := apiPathCached[ws.Kid]
 	//不存在，刷新接口
 	if !ok {
@@ -53,7 +52,7 @@ func ApiPathList(fetchHandler ApiHandler, ws *db.Workspace) ([]module.ApiPath, e
 	return out, nil
 }
 
-func ApiRefresh(fetchHandler ApiHandler, ws *db.Workspace) error {
+func ApiRefresh(fetchHandler ApiHandler, ws *module.Workspace) error {
 
 	lock.Lock()
 	defer lock.Unlock()
@@ -89,8 +88,8 @@ func GetDefinitionArray(key uint64, objDefine string) []interface{} {
 }
 
 /**
-	根据对象类型生成相关属性
- */
+根据对象类型生成相关属性
+*/
 func GetDefinitionMap(key uint64, objDefine string) map[string]interface{} {
 	allDefines := apiDefinitionCached[key]
 

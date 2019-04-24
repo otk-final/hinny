@@ -1,8 +1,8 @@
-package global
+package module
 
 import (
-	"github.com/spf13/viper"
 	"fmt"
+	"github.com/spf13/viper"
 )
 
 var Conf *viper.Viper
@@ -27,7 +27,6 @@ func initConfiguration() {
 	Conf.AddConfigPath("./config/")
 	Conf.SetConfigName("conf")
 	Conf.SetConfigType("toml")
-
 
 	err := Conf.ReadInConfig()
 	if err != nil {

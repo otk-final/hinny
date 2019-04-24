@@ -1,18 +1,16 @@
 package web
 
 import (
-	"net/http"
-	"otk-final/hinny/module/db"
-	"strings"
-	"otk-final/hinny/service"
-	"io/ioutil"
 	"encoding/json"
-	"time"
 	"fmt"
-	"net/url"
 	"github.com/gorilla/mux"
-	"otk-final/hinny/module"
-	"otk-final/hinny/module/global"
+	"github.com/otk-final/hinny/module"
+	"github.com/otk-final/hinny/service"
+	"io/ioutil"
+	"net/http"
+	"net/url"
+	"strings"
+	"time"
 )
 
 type CaseModuleGroup struct {
@@ -38,8 +36,8 @@ func GetCaseModules(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	tablePrefix := global.Conf.GetString("db.tablePrefix")
-	rows, err := db.Conn.Select("module,group_concat(case_type) caseTypes").
+	tablePrefix := module.Conf.GetString("db.tablePrefix")
+	rows, err := module.Conn.Select("module,group_concat(case_type) caseTypes").
 		Table(tablePrefix+"case_template").
 		Where("application = ?", application).
 		GroupBy("module").Query()
@@ -64,8 +62,8 @@ func GetCaseModules(response http.ResponseWriter, request *http.Request) {
 }
 
 /**
-	案例执行
- */
+案例执行
+*/
 func CaseExecute(response http.ResponseWriter, request *http.Request) {
 	ws, err := GetWorkspaceFromHeader(request)
 	if err != nil {
@@ -95,8 +93,8 @@ func CaseExecute(response http.ResponseWriter, request *http.Request) {
 }
 
 /**
-	案例保存模板
- */
+案例保存模板
+*/
 func CaseSave(response http.ResponseWriter, request *http.Request) {
 	application := request.Header.Get("application")
 
@@ -109,15 +107,15 @@ func CaseSave(response http.ResponseWriter, request *http.Request) {
 	}
 
 	//查询原始记录，保存至模板信息表中
-	log := &db.CaseLog{}
-	ok, err := db.Conn.ID(input.LogKid).Get(log)
+	log := &module.CaseLog{}
+	ok, err := module.Conn.ID(input.LogKid).Get(log)
 	if !ok || err != nil {
 		panic(nil)
 	}
 
-	tempKid, _ := db.GetNextKid()
+	tempKid, _ := module.GetNextKid()
 
-	temp := &db.CaseTemplate{
+	temp := &module.CaseTemplate{
 		Kid:         tempKid,
 		Application: application,
 		CaseName:    input.CaseName,
@@ -132,7 +130,7 @@ func CaseSave(response http.ResponseWriter, request *http.Request) {
 	}
 
 	//创建事务
-	session := db.Conn.NewSession()
+	session := module.Conn.NewSession()
 	defer session.Close()
 
 	//事务提交或者回滚
@@ -152,7 +150,7 @@ func CaseSave(response http.ResponseWriter, request *http.Request) {
 	}
 
 	//修改日志
-	count, err = session.ID(log.Kid).Update(db.CaseLog{CaseKid: tempKid})
+	count, err = session.ID(log.Kid).Update(module.CaseLog{CaseKid: tempKid})
 	if count != 1 && err != nil {
 		panic(err)
 	}
@@ -162,10 +160,10 @@ func CaseSave(response http.ResponseWriter, request *http.Request) {
 }
 
 /**
-	获取模块列表
- */
+获取模块列表
+*/
 func GetCases(response http.ResponseWriter, request *http.Request) {
-	temps := make([]*db.CaseTemplate, 0)
+	temps := make([]*module.CaseTemplate, 0)
 
 	application := request.Header.Get("application")
 	if application == "" {
@@ -174,8 +172,8 @@ func GetCases(response http.ResponseWriter, request *http.Request) {
 	}
 
 	/**
-		获取查询参数
-	 */
+	获取查询参数
+	*/
 	values, err := url.ParseQuery(request.URL.RawQuery)
 
 	dynamicArgs := func() (string, []interface{}) {
@@ -207,11 +205,11 @@ func GetCases(response http.ResponseWriter, request *http.Request) {
 	}
 
 	/**
-		查询
-	 */
+	查询
+	*/
 	sql, args := dynamicArgs()
 
-	err = db.Conn.Cols("kid", "application", "case_type", "module", "case_name", "create_time").Where(sql, args...).Find(&temps)
+	err = module.Conn.Cols("kid", "application", "case_type", "module", "case_name", "create_time").Where(sql, args...).Find(&temps)
 	if err != nil {
 		panic(err)
 	}
@@ -225,8 +223,8 @@ func GetCaseLog(response http.ResponseWriter, request *http.Request) {
 	logKid := vars["kid"]
 
 	//查询数据库记录,获取执行记录
-	log := &db.CaseLog{}
-	ok, err := db.Conn.ID(logKid).Get(log)
+	log := &module.CaseLog{}
+	ok, err := module.Conn.ID(logKid).Get(log)
 	if !ok || err != nil {
 		panic(err)
 	}
@@ -300,16 +298,16 @@ func GetCaseLog(response http.ResponseWriter, request *http.Request) {
 }
 
 /**
-	获取案例下，的日志记录
- */
+获取案例下，的日志记录
+*/
 func GetCaseLogs(response http.ResponseWriter, request *http.Request) {
 	caseKid := request.URL.Query().Get("caseKid")
 
 	/**
-		查询数据库，创建时间倒叙 只返回最近5条
-	 */
-	out := make([]*db.CaseLog, 0)
-	err := db.Conn.Cols("kid", "case_kid", "path", "status", "create_time").
+	查询数据库，创建时间倒叙 只返回最近5条
+	*/
+	out := make([]*module.CaseLog, 0)
+	err := module.Conn.Cols("kid", "case_kid", "path", "status", "create_time").
 		Where("case_kid=?", caseKid).Limit(5).
 		Desc("create_time").Find(&out)
 	if err != nil {

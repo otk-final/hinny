@@ -1,22 +1,21 @@
 package service
 
 import (
-	"otk-final/hinny/module"
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"github.com/otk-final/hinny/module"
+	"io/ioutil"
 	"net/http"
 	"net/url"
-	"strings"
-	"io/ioutil"
-	"time"
-	"otk-final/hinny/module/db"
-	"fmt"
-	"encoding/json"
 	"strconv"
-	"bytes"
+	"strings"
+	"time"
 )
 
 /**
-	案例输入
- */
+案例输入
+*/
 type CaseInput struct {
 	PrimaryId string              `json:"primaryId"`
 	CaseKid   uint64              `json:"caseKid,string"`
@@ -25,8 +24,8 @@ type CaseInput struct {
 }
 
 /**
-	案例输出
- */
+案例输出
+*/
 type CaseOutput struct {
 	LogKid   uint64               `json:"logKid,string"`
 	Time     time.Duration        `json:"time"`
@@ -35,7 +34,7 @@ type CaseOutput struct {
 	Result   []*module.MetaResult `json:"result"`
 }
 
-func Execute(ws *db.Workspace, path *module.ApiPath, input *CaseInput) (*CaseOutput, error) {
+func Execute(ws *module.Workspace, path *module.ApiPath, input *CaseInput) (*CaseOutput, error) {
 
 	//序列化化存储请求相关参数,存储页面原始数据
 	reqCtx, err := json.Marshal(input.Request)
@@ -51,9 +50,9 @@ func Execute(ws *db.Workspace, path *module.ApiPath, input *CaseInput) (*CaseOut
 	}
 	input.Request = newRequest
 
-	logKid, _ := db.GetNextKid()
+	logKid, _ := module.GetNextKid()
 	//记录日志
-	log := &db.CaseLog{
+	log := &module.CaseLog{
 		Kid:          logKid,
 		WsKId:        ws.Kid,
 		CaseKid:      input.CaseKid,
@@ -87,14 +86,14 @@ func Execute(ws *db.Workspace, path *module.ApiPath, input *CaseInput) (*CaseOut
 	log.Status = validCode
 
 	//保存
-	db.Conn.Insert(log)
+	module.Conn.Insert(log)
 
 	return &CaseOutput{LogKid: logKid, Response: metaResp, Curl: log.Curl, Result: results}, nil
 }
 
 /**
-	请求分发
- */
+请求分发
+*/
 func dispatch(host string, path *module.ApiPath, input *CaseInput) (*http.Request, *module.MetaResponse, error) {
 
 	//请求参数
@@ -114,7 +113,7 @@ func dispatch(host string, path *module.ApiPath, input *CaseInput) (*http.Reques
 	}
 
 	//报文头提交
-	if strings.Contains("POST,PUT", path.Method) || strings.Contains("post,put", path.Method){
+	if strings.Contains("POST,PUT", path.Method) || strings.Contains("post,put", path.Method) {
 		request.Body = ioutil.NopCloser(strings.NewReader(input.Request.Body))
 	}
 
@@ -160,8 +159,8 @@ func dispatch(host string, path *module.ApiPath, input *CaseInput) (*http.Reques
 }
 
 /**
-	转换Header
- */
+转换Header
+*/
 func (that *CaseInput) cvtHeader() *http.Header {
 	reqHeader := &http.Header{}
 	inputHeader := that.Request.Header
@@ -179,15 +178,15 @@ func (that *CaseInput) cvtHeader() *http.Header {
 
 	//头默认为json
 	if contentType := reqHeader.Get("Content-Type"); contentType == "" {
-		reqHeader.Set("Content-Type","application/json")
+		reqHeader.Set("Content-Type", "application/json")
 	}
 
 	return reqHeader
 }
 
 /**
-	转换路径
- */
+转换路径
+*/
 func (that *CaseInput) cvtUrl(host string, stringPath string) *url.URL {
 	uri := that.Request.Uri
 
@@ -217,8 +216,8 @@ func (that *CaseInput) cvtUrl(host string, stringPath string) *url.URL {
 }
 
 /**
-	转换参数
- */
+转换参数
+*/
 func (that *CaseInput) cvtUrlValues() *url.Values {
 	queries := that.Request.Query
 	values := &url.Values{}

@@ -1,19 +1,18 @@
-package db
+package module
 
 import (
+	"fmt"
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/go-xorm/xorm"
 	"github.com/go-xorm/core"
+	"github.com/go-xorm/xorm"
 	"github.com/sony/sonyflake"
 	"log"
 	"time"
-	"otk-final/hinny/module/global"
-	"fmt"
 )
 
 /**
-	工作空间表
- */
+工作空间表
+*/
 type Workspace struct {
 	Kid         uint64 `json:"kid,string"  xorm:"pk bigint(20) notnull 'kid'"`
 	Application string `json:"application" xorm:"varchar(64)   notnull 'application'"`
@@ -26,8 +25,8 @@ type Workspace struct {
 }
 
 /**
-	案例模板
- */
+案例模板
+*/
 type CaseTemplate struct {
 	Kid         uint64    `json:"kid,string"    xorm:"pk bigint(20) 			'kid'"`
 	Application string    `json:"application"   xorm:"varchar(255) notnull 		'application'"`
@@ -43,8 +42,8 @@ type CaseTemplate struct {
 }
 
 /**
-	案例日志
- */
+案例日志
+*/
 type CaseLog struct {
 	Kid          uint64    `json:"kid,string"      xorm:"pk bigint(20) 		        'kid'"`
 	WsKId        uint64    `json:"wsKid,string"    xorm:"bigint(20) 				'ws_kid'"`
@@ -63,12 +62,13 @@ type CaseLog struct {
 
 var Conn *xorm.Engine
 var idGeneral *sonyflake.Sonyflake
+
 /**
 
-	初始化
-	driverName:mysql
-	dataSourceName:mysql name:password@(ip:port)/xxx?charset=utf8
- */
+初始化
+driverName:mysql
+dataSourceName:mysql name:password@(ip:port)/xxx?charset=utf8
+*/
 
 func Install(driverName string, dataSourceName string) {
 	/*数据库支持*/
@@ -78,14 +78,14 @@ func Install(driverName string, dataSourceName string) {
 		log.Println("initializing db :", err.Error())
 	}
 	//最大连接数
-	engine.SetMaxIdleConns(global.Conf.GetInt("db.maxConn"))
+	engine.SetMaxIdleConns(Conf.GetInt("db.maxConn"))
 
 	err = engine.Ping()
 	if err != nil {
 		log.Println("ping db ping:", err.Error())
 	}
 	//统一去除前缀前缀
-	mapper := core.NewPrefixMapper(core.SnakeMapper{}, global.Conf.GetString("db.tablePrefix"))
+	mapper := core.NewPrefixMapper(core.SnakeMapper{}, Conf.GetString("db.tablePrefix"))
 	engine.ShowSQL(true)
 	engine.SetTableMapper(mapper)
 	//暴露

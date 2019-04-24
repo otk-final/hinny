@@ -1,12 +1,12 @@
 package service
 
 import (
-	"otk-final/hinny/module"
-	"github.com/robertkrimen/otto"
+	"encoding/json"
 	"fmt"
+	"github.com/otk-final/hinny/module"
+	"github.com/robertkrimen/otto"
 	"reflect"
 	"strings"
-	"encoding/json"
 )
 
 type ValidDefine struct {
@@ -32,8 +32,6 @@ func NewValid(script string, request *module.MetaRequest) *ValidDefine {
 		request: request,
 	}
 
-
-
 	//运行初始化脚本
 
 	//javascript 虚拟执行环境
@@ -53,22 +51,20 @@ func NewValid(script string, request *module.MetaRequest) *ValidDefine {
 	vm.Set("$setQuery", ctx.setValueFunc("query"))
 	vm.Set("$setBody", ctx.setBodyFunc())
 
-
 	/**
-		如果脚本为空，直接返回
- 	*/
+	如果脚本为空，直接返回
+	*/
 	if script == "" {
 		ctx.vm = vm
 		return ctx
 	}
-
 
 	value, err := vm.Run(script)
 	if err != nil {
 		ctx.result = append(ctx.result, &module.MetaResult{
 			Rule: "脚本加载编译错误",
 			Msg:  err.Error(),
-			Ok:   false,})
+			Ok:   false})
 	}
 	fmt.Println(value)
 	ctx.vm = vm
@@ -76,13 +72,13 @@ func NewValid(script string, request *module.MetaRequest) *ValidDefine {
 }
 
 /**
-	初始化相关函数
- */
+初始化相关函数
+*/
 func (that *ValidDefine) BeforeInit() (request *module.MetaRequest, err error) {
 
 	/**
-		方法不存在
-	 */
+	方法不存在
+	*/
 	init, err := that.vm.Get("init")
 	if !init.IsFunction() {
 		return that.request, nil
@@ -90,13 +86,13 @@ func (that *ValidDefine) BeforeInit() (request *module.MetaRequest, err error) {
 
 	values, err := that.vm.Call("init", nil)
 	/**
-		不存在，或者错误，返回
-	 */
+	不存在，或者错误，返回
+	*/
 	if err != nil {
 		that.result = append(that.result, &module.MetaResult{
 			Rule: "脚本[init]编译错误",
 			Msg:  err.Error(),
-			Ok:   false,})
+			Ok:   false})
 		return that.request, err
 	}
 
@@ -107,8 +103,8 @@ func (that *ValidDefine) BeforeInit() (request *module.MetaRequest, err error) {
 func (that *ValidDefine) AfterValid(resp *module.MetaResponse) ([]*module.MetaResult, ValidCode) {
 
 	/**
-		方法不存在
- 	*/
+	方法不存在
+	*/
 	testing, err := that.vm.Get("testing")
 	if !testing.IsFunction() {
 		return that.result, SUCCESS
@@ -123,7 +119,7 @@ func (that *ValidDefine) AfterValid(resp *module.MetaResponse) ([]*module.MetaRe
 		that.result = append(that.result, &module.MetaResult{
 			Rule: "脚本[testing]编译错误",
 			Msg:  err.Error(),
-			Ok:   false,})
+			Ok:   false})
 	}
 
 	//返回值，暂不做处理
@@ -158,15 +154,15 @@ func (that *ValidDefine) AfterValid(resp *module.MetaResponse) ([]*module.MetaRe
 func (that *ValidDefine) appendResultFunc() func(call otto.FunctionCall) otto.Value {
 	return func(call otto.FunctionCall) otto.Value {
 		/**
-			获取参数
-		 */
+		获取参数
+		*/
 		rule := call.Argument(0).String()     //规则说明
 		msg := call.Argument(1).String()      //验证结果
 		ok, _ := call.Argument(2).ToBoolean() //状态
 
 		/**
-			添加到当前上下文中
-		 */
+		添加到当前上下文中
+		*/
 		item := &module.MetaResult{
 			Rule: rule,
 			Msg:  msg,
@@ -238,8 +234,8 @@ func (that *ValidDefine) setValueFunc(funcType string) func(call otto.FunctionCa
 			return call.This
 		}
 		/**
-			值存在则替换
-		 */
+		值存在则替换
+		*/
 		size := len(values)
 		exist := false
 		for idx := 0; idx < size; idx++ {
@@ -276,8 +272,8 @@ func (that *ValidDefine) getValueFunc(funcType string) func(call otto.FunctionCa
 		var err error
 
 		/**
-			获取参数,无参返回所有
-		 */
+		获取参数,无参返回所有
+		*/
 		if len(call.ArgumentList) == 0 {
 			out, err = otto.ToValue(typeValues)
 			if err != nil {
@@ -298,7 +294,7 @@ func (that *ValidDefine) getValueFunc(funcType string) func(call otto.FunctionCa
 			if itemMap["type"] == "array" {
 				/*
 					数组借助临时变量获取
-				 */
+				*/
 				call.Otto.Set("$tempArray", itemMap["value"])
 				out, err = call.Otto.Get("$tempArray")
 			} else {
